@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hindcast · 鉴往 — 4 个经济学家怎么看（诚实推理实验室）</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Helvetica Neue", sans-serif; }
+    /* school accents — subtle (just dot indicators) */
+    .sch-austrian            { --c: #d97706; }
+    .sch-monetarist          { --c: #2563eb; }
+    .sch-keynesian           { --c: #059669; }
+    .sch-rational_expectations { --c: #7c3aed; }
+    .sch-dot { background: var(--c); }
+    /* directional colors */
+    .dir-up   { color: #dc2626; }
+    .dir-down { color: #16a34a; }
+    .dir-flat { color: #94a3b8; }
+    /* volatility class pills */
+    .vc-exogenous_shock      { background:#dcfce7; color:#166534; }
+    .vc-endogenous_technical { background:#ffedd5; color:#9a3412; }
+    .vc-stochastic_noise     { background:#f1f5f9; color:#64748b; }
+    .vc-structural_break     { background:#fee2e2; color:#991b1b; }
+    /* hide scrollbars on timeline */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    [x-cloak] { display: none !important; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 antialiased">
+
+<div x-data="hindcast()" x-init="init()" class="max-w-5xl mx-auto px-4 py-8">
+
+  <!-- ── Hero ───────────────────────────────────────────────── -->
+  <header class="mb-10 flex items-center justify-between">
+    <div class="flex items-baseline gap-3">
+      <h1 class="text-2xl font-semibold tracking-tight">Hindcast</h1>
+      <span class="text-lg text-slate-500">·</span>
+      <span class="text-lg text-slate-700 font-medium">鉴往</span>
+      <span class="text-xs text-slate-400 ml-2 hidden sm:inline">诚实推理实验室 · 非预测器</span>
+    </div>
+    <div class="text-right">
+      <div class="text-xs text-slate-400">交付的是</div>
+      <div class="text-sm font-medium text-slate-700">4 学派怎么想 + 战绩 + 分歧</div>
+    </div>
+  </header>
+
+  <!-- ── Mode segmented control ────────────────────────────── -->
+  <nav class="mb-8 inline-flex p-1 rounded-full bg-slate-100">
+    <button @click="switchTab('history')"
+            :class="tab === 'history' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+            class="px-5 py-2 rounded-full text-sm font-medium transition-colors">
+      🕰️ 历史模拟
+    </button>
+    <button @click="switchTab('realtime')"
+            :class="tab === 'realtime' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+            class="px-5 py-2 rounded-full text-sm font-medium transition-colors">
+      🔮 看当下结构
+    </button>
+  </nav>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- TAB 1: 历史模拟                                            -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <section x-show="tab === 'history'" class="space-y-8">
+
+    <!-- 时间线选择器 -->
+    <div>
+      <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">选择时点</div>
+      <div class="overflow-x-auto no-scrollbar -mx-4 px-4">
+        <div class="flex gap-2 min-w-max">
+          <template x-for="snap in snapshots" :key="snap.as_of">
+            <button
+              @click="selectSnapshot(snap)"
+              :class="selected && selected.as_of === snap.as_of
+                      ? 'bg-slate-900 text-white border-slate-900'
+                      : 'bg-white text-slate-700 border-slate-200 hover:border-slate-400'"
+              class="flex-shrink-0 px-4 py-3 rounded-xl border text-left transition-all">
+              <div class="text-2xl font-bold leading-none" x-text="snap.as_of.slice(0, 4)"></div>
+              <div class="text-xs mt-1 opacity-75" x-text="snap.label.replace(/\\(pre.*\\)/, '').replace(/pre Black Wednesday/, '').slice(0, 22)"></div>
+            </button>
+          </template>
+        </div>
+      </div>
+      <p x-show="selected" class="mt-3 text-sm text-slate-600 px-1" x-text="'📌 ' + (selected ? selected.event : '')"></p>
+    </div>
+
+    <!-- 结构状态摘要 (折叠默认) -->
+    <details x-show="selected" class="group bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <summary class="px-4 py-3 cursor-pointer flex items-center justify-between text-sm font-medium text-slate-700 hover:bg-slate-50">
+        <span>📊 当时 15 个结构变量</span>
+        <span class="text-xs text-slate-400 group-open:rotate-180 transition-transform">⌃</span>
+      </summary>
+      <div x-show="state" class="px-4 pb-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1 text-sm">
+          <template x-for="v in (state ? state.variables : [])" :key="v.id">
+            <div class="flex items-center justify-between py-1.5 border-b border-slate-100">
+              <span class="text-slate-600 flex items-baseline gap-2">
+                <span class="font-mono text-xs text-slate-400" x-text="v.id"></span>
+                <span x-text="v.name"></span>
+              </span>
+              <span class="font-mono text-sm text-slate-900" x-text="formatValue(v.value)"></span>
+            </div>
+          </template>
+        </div>
+      </div>
+    </details>
+
+    <!-- CTA -->
+    <div x-show="selected">
+      <button
+        @click="runPredict('history')"
+        :disabled="!selected || running"
+        :class="running ? 'bg-slate-300 cursor-not-allowed' : 'bg-slate-900 hover:bg-slate-800 active:scale-95'"
+        class="w-full sm:w-auto px-8 py-4 rounded-xl text-white font-medium text-base transition-all shadow-sm flex items-center gap-3">
+        <span x-show="!running || mode !== 'history'" class="flex items-center gap-2">
+          <span>▶</span> <span>让 4 学派看这一天</span>
+        </span>
+        <span x-show="running && mode === 'history'" class="flex items-center gap-2">
+          <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+          </svg>
+          <span>推理中</span>
+        </span>
+        <span class="text-xs opacity-60 ml-auto">~30s · $0.02</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- TAB 2: 看当下结构（非"预测"）                              -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <section x-show="tab === 'realtime'" class="space-y-8">
+
+    <!-- 调整 today 变量（折叠默认）-->
+    <details class="group bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <summary class="px-4 py-3 cursor-pointer flex items-center justify-between text-sm font-medium text-slate-700 hover:bg-slate-50">
+        <span>🔧 今日 15 个结构变量（可调）</span>
+        <div class="flex items-center gap-3">
+          <button @click.stop="loadToday()" class="text-xs text-slate-500 hover:text-slate-700">↻ 重置</button>
+          <span class="text-xs text-slate-400 group-open:rotate-180 transition-transform">⌃</span>
+        </div>
+      </summary>
+      <div x-show="realtimeState" class="px-4 pb-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2 text-sm">
+          <template x-for="v in (realtimeState ? realtimeState.variables : [])" :key="v.id">
+            <label class="flex items-center justify-between py-1 border-b border-slate-100">
+              <span class="text-slate-600 flex items-baseline gap-2 min-w-0 flex-1">
+                <span class="font-mono text-xs text-slate-400" x-text="v.id"></span>
+                <span class="truncate text-xs" x-text="v.name"></span>
+              </span>
+              <input
+                type="number" step="0.01"
+                :value="realtimeValues[v.id]"
+                @input="realtimeValues[v.id] = parseFloat($event.target.value)"
+                class="w-20 px-2 py-1 text-right font-mono text-sm rounded border border-slate-200 focus:border-slate-400 focus:outline-none">
+            </label>
+          </template>
+        </div>
+      </div>
+    </details>
+
+    <!-- 新闻事件输入（核心交互） -->
+    <div>
+      <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">输入新闻事件 <span class="font-normal text-slate-400 normal-case">（可选）</span></div>
+      <textarea
+        x-model="eventText"
+        rows="3"
+        placeholder='例: 美联储紧急降息 50bp / USTR 宣布对中国新能源车 100% 关税 / 沙特宣布石油以人民币结算'
+        class="w-full px-4 py-3 text-sm rounded-xl bg-white border border-slate-200 focus:border-slate-400 focus:outline-none resize-none"></textarea>
+    </div>
+
+    <!-- CTA pair -->
+    <div class="flex flex-col sm:flex-row gap-3">
+      <button
+        @click="runPredict('custom')"
+        :disabled="!realtimeState || running"
+        :class="running ? 'bg-slate-300 cursor-not-allowed' : 'bg-slate-900 hover:bg-slate-800 active:scale-95'"
+        class="flex-1 px-6 py-4 rounded-xl text-white font-medium transition-all shadow-sm flex items-center justify-between gap-2">
+        <span x-show="!running || mode !== 'custom'" class="flex items-center gap-2">
+          <span>▶</span> <span>让 4 学派读当前结构</span>
+        </span>
+        <span x-show="running && mode === 'custom'" class="flex items-center gap-2">
+          <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+          </svg>
+          <span>推理中</span>
+        </span>
+        <span class="text-xs opacity-60">$0.02</span>
+      </button>
+      <button
+        @click="runEventModulation()"
+        :disabled="!realtimeState || !eventText.trim() || running"
+        :class="(!eventText.trim() || running) ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-amber-500 hover:bg-amber-600 active:scale-95 text-white'"
+        class="flex-1 px-6 py-4 rounded-xl font-medium transition-all shadow-sm flex items-center justify-between gap-2">
+        <span x-show="!running || mode !== 'event'" class="flex items-center gap-2">
+          <span>⚡</span> <span>常态 + 事件修正</span>
+        </span>
+        <span x-show="running && mode === 'event'" class="flex items-center gap-2">
+          <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+          </svg>
+          <span>推理中</span>
+        </span>
+        <span class="text-xs opacity-60">$0.04</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- 结果区：4 学派方向判断 + 诚实横幅（hero）                  -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <section x-show="forecast" class="mt-12 space-y-6">
+
+    <!-- 18-ADR 诚实边界横幅（服务端单一真相源，置于结果最前） -->
+    <div x-show="forecast && forecast.honest_frame" class="bg-rose-50 border border-rose-200 rounded-2xl p-5 text-sm">
+      <div class="font-semibold text-rose-800 mb-1" x-text="forecast && forecast.honest_frame && forecast.honest_frame.not_advice"></div>
+      <p class="text-rose-700 leading-relaxed" x-text="forecast && forecast.honest_frame && forecast.honest_frame.negative_value_warning"></p>
+      <p class="text-slate-700 leading-relaxed mt-2" x-text="forecast && forecast.honest_frame && forecast.honest_frame.what_we_deliver"></p>
+      <p class="text-slate-500 text-xs mt-2">
+        <span x-text="forecast && forecast.honest_frame && forecast.honest_frame.neutral_default"></span>
+        · <span x-text="forecast && forecast.honest_frame && forecast.honest_frame.ref"></span>
+      </p>
+    </div>
+
+    <!-- 4 学派方向判断（研究记录，非建议） -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-8">
+      <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">4 学派各自的方向判断 · XAU/USD <span class="normal-case text-slate-400">（研究记录，非投资 / 配置建议）</span></div>
+      <div class="grid grid-cols-2 gap-8 mt-4">
+        <div>
+          <div class="text-xs text-slate-500 mb-1">T+5（5 交易日）</div>
+          <div :class="'dir-' + (forecast && forecast.horizons['T+5'].direction)" class="text-5xl font-bold leading-none" x-text="arrow(forecast && forecast.horizons['T+5'].direction)"></div>
+          <div class="text-xs text-slate-500 mt-2" x-show="forecast">
+            投票 <span class="font-mono text-slate-700" x-text="forecast && JSON.stringify(forecast.horizons['T+5'].vote_counts)"></span>
+          </div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-500 mb-1">T+20（20 交易日）</div>
+          <div :class="'dir-' + (forecast && forecast.horizons['T+20'].direction)" class="text-5xl font-bold leading-none" x-text="arrow(forecast && forecast.horizons['T+20'].direction)"></div>
+          <div class="text-xs text-slate-500 mt-2" x-show="forecast">
+            投票 <span class="font-mono text-slate-700" x-text="forecast && JSON.stringify(forecast.horizons['T+20'].vote_counts)"></span>
+          </div>
+        </div>
+      </div>
+      <!-- 呈现态：学派(不)一致 → "无明确方向 → 保持均衡"（绝不声称 regime，拱顶石未造） -->
+      <div x-show="forecast && forecast.stance" class="mt-5 grid grid-cols-2 gap-8">
+        <template x-for="h in ['T+5','T+20']" :key="h">
+          <div class="text-sm flex items-baseline gap-2"
+               :class="forecast && forecast.stance && forecast.stance[h].no_clear_direction ? 'text-slate-500' : 'text-slate-900 font-medium'">
+            <span class="text-xs text-slate-400" x-text="h"></span>
+            <span x-text="forecast && forecast.stance ? forecast.stance[h].label : ''"></span>
+          </div>
+        </template>
+      </div>
+
+      <div class="mt-6 pt-4 border-t border-slate-100 flex items-center gap-4 text-xs">
+        <span class="text-slate-500">4 学派</span>
+        <span x-show="forecast && forecast.is_unanimous" class="text-emerald-600 font-medium">✓ 一致</span>
+        <span x-show="forecast && !forecast.is_unanimous && !forecast.is_split" class="text-slate-600">微分歧</span>
+        <span x-show="forecast && forecast.is_split" class="text-amber-600 font-medium">⚠ 2:2 平局</span>
+      </div>
+    </div>
+
+    <!-- Ground truth (仅历史) -->
+    <div x-show="tab === 'history' && forecast && forecast.ground_truth && forecast.ground_truth['T+5']"
+         class="bg-amber-50 rounded-xl border border-amber-200 p-4">
+      <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-700 mb-3">
+        📚 历史实际值
+      </div>
+      <div class="grid grid-cols-2 gap-4 text-sm">
+        <template x-for="h in ['T+5', 'T+20']" :key="h">
+          <div class="flex items-center gap-3">
+            <span :class="'dir-' + (forecast.ground_truth[h] ? forecast.ground_truth[h].dir : 'flat')" class="text-2xl font-bold" x-text="arrow(forecast.ground_truth[h] ? forecast.ground_truth[h].dir : '?')"></span>
+            <div>
+              <div class="text-xs text-slate-500" x-text="h + ' 实际'"></div>
+              <div class="font-mono text-sm text-slate-700" x-text="forecast.ground_truth[h] ? forecast.ground_truth[h].actual_pct + '%' : ''"></div>
+            </div>
+            <span class="ml-auto text-sm font-semibold"
+                  :class="forecast.ground_truth[h] && forecast.horizons[h].direction === forecast.ground_truth[h].dir ? 'text-emerald-600' : 'text-rose-500'"
+                  x-text="forecast.ground_truth[h] && forecast.horizons[h].direction === forecast.ground_truth[h].dir ? '✓ HIT' : '✕ MISS'"></span>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- 4 学派详情 -->
+    <div>
+      <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">4 学派各自的判断</div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <template x-for="v in (forecast ? forecast.verdicts : [])" :key="v.school">
+          <div :class="'sch-' + v.school" class="bg-white rounded-xl border border-slate-200 p-4">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="sch-dot inline-block w-2.5 h-2.5 rounded-full" :style="'background:' + (
+                {austrian:'#d97706', monetarist:'#2563eb', keynesian:'#059669', rational_expectations:'#7c3aed'}[v.school] || '#94a3b8'
+              )"></span>
+              <h3 class="font-semibold text-slate-900 text-sm" x-text="schoolName(v.school)"></h3>
+              <span x-show="v.volatility_class"
+                    :class="'vc-' + v.volatility_class"
+                    class="ml-auto inline-block text-xs px-2 py-0.5 rounded-full font-mono"
+                    x-text="vcLabel(v.volatility_class)"></span>
+            </div>
+            <div x-show="v.failed" class="text-rose-500 text-sm">❌ FAILED</div>
+            <div x-show="!v.failed">
+              <div class="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <div class="text-xs text-slate-400">T+5</div>
+                  <div :class="'dir-' + v.verdict['T+5'].dir" class="text-xl font-bold leading-none mt-1" x-text="arrow(v.verdict['T+5'].dir)"></div>
+                  <div class="text-xs text-slate-500 font-mono mt-1" x-text="'[' + v.verdict['T+5'].range_pct.join(', ') + ']%'"></div>
+                </div>
+                <div>
+                  <div class="text-xs text-slate-400">T+20</div>
+                  <div :class="'dir-' + v.verdict['T+20'].dir" class="text-xl font-bold leading-none mt-1" x-text="arrow(v.verdict['T+20'].dir)"></div>
+                  <div class="text-xs text-slate-500 font-mono mt-1" x-text="'[' + v.verdict['T+20'].range_pct.join(', ') + ']%'"></div>
+                </div>
+              </div>
+              <p x-show="v.attribution_note" class="text-xs text-slate-500 italic mb-2" x-text="v.attribution_note"></p>
+              <details class="text-xs">
+                <summary class="cursor-pointer text-slate-500 hover:text-slate-700">展开推理 · confidence <span x-text="v.confidence ? v.confidence.toFixed(2) : '0'"></span></summary>
+                <div class="mt-2 space-y-1.5 text-slate-700">
+                  <div x-show="v.top_signals && v.top_signals.length"><span class="text-slate-400">信号:</span> <span class="font-mono" x-text="(v.top_signals || []).join(' · ')"></span></div>
+                  <div x-show="v.historical_precedents && v.historical_precedents.length"><span class="text-slate-400">先例:</span> <span x-text="(v.historical_precedents || []).join(' · ')"></span></div>
+                  <p class="leading-relaxed" x-text="v.reasoning"></p>
+                </div>
+              </details>
+              <button @click="openConsult(v)"
+                class="mt-3 w-full text-xs text-slate-600 hover:text-slate-900 border border-slate-200 hover:border-slate-400 rounded-lg py-2 transition-colors">
+                💬 追问这位经济学家（咨询·非投资建议）
+              </button>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- 事件修正面板                                                -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <section x-show="modulation" class="mt-8 space-y-6">
+
+    <!-- 事件 + 合计 hero -->
+    <div class="bg-amber-50 rounded-2xl border border-amber-200 p-6">
+      <div class="text-xs font-semibold uppercase tracking-wider text-amber-700 mb-2">⚡ 事件修正</div>
+      <p class="text-sm text-slate-700 mb-4" x-show="modulation" x-text="modulation ? modulation.event_text : ''"></p>
+      <div class="grid grid-cols-2 gap-6">
+        <template x-for="h in ['T+5', 'T+20']" :key="h">
+          <div>
+            <div class="text-xs text-slate-500 mb-1" x-text="h + ' 合计 delta'"></div>
+            <div :class="modulation && modulation.modulation.aggregate_delta[h] > 0 ? 'dir-up' : (modulation && modulation.modulation.aggregate_delta[h] < 0 ? 'dir-down' : 'dir-flat')"
+                 class="text-4xl font-bold leading-none"
+                 x-text="(modulation && modulation.modulation.aggregate_delta[h] > 0 ? '+' : '') + (modulation ? modulation.modulation.aggregate_delta[h].toFixed(2) : 0) + '%'"></div>
+          </div>
+        </template>
+      </div>
+      <div x-show="modulation && modulation.modulation.structural_change_votes >= 3" class="mt-4 text-xs text-rose-700 font-medium">
+        ⚠️ 4/4 学派认为这是"结构性变化" → 结构状态库可能需更新（内部维护提示，非投资含义）
+      </div>
+    </div>
+
+    <!-- 4 学派 delta 卡片 -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <template x-for="d in (modulation ? modulation.modulation.deltas : [])" :key="d.school">
+        <div class="bg-white rounded-xl border border-slate-200 p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="inline-block w-2.5 h-2.5 rounded-full" :style="'background:' + (
+              {austrian:'#d97706', monetarist:'#2563eb', keynesian:'#059669', rational_expectations:'#7c3aed'}[d.school] || '#94a3b8'
+            )"></span>
+            <h4 class="font-semibold text-slate-900 text-sm" x-text="schoolName(d.school)"></h4>
+            <span x-show="d.event_volatility_class"
+                  :class="'vc-' + d.event_volatility_class"
+                  class="ml-auto inline-block text-xs px-2 py-0.5 rounded-full font-mono"
+                  x-text="vcLabel(d.event_volatility_class)"></span>
+          </div>
+          <div x-show="d.failed" class="text-rose-500 text-xs">FAILED</div>
+          <div x-show="!d.failed" class="grid grid-cols-2 gap-3">
+            <template x-for="h in ['T+5', 'T+20']" :key="h">
+              <div>
+                <div class="text-xs text-slate-400" x-text="h"></div>
+                <div :class="d.delta[h].adjust_pct > 0 ? 'dir-up' : (d.delta[h].adjust_pct < 0 ? 'dir-down' : 'dir-flat')"
+                     class="text-lg font-bold leading-none mt-1"
+                     x-text="(d.delta[h].adjust_pct > 0 ? '+' : '') + d.delta[h].adjust_pct.toFixed(2) + '%'"></div>
+                <div class="text-xs text-slate-500 italic mt-1" x-text="d.delta[h].reason"></div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <!-- 咨询弹层（18-ADR ③：深讲推理+战绩，硬禁买卖配置）          -->
+  <!-- ════════════════════════════════════════════════════════ -->
+  <div x-show="consultSchool" x-cloak
+       class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 p-0 sm:p-4"
+       @click.self="closeConsult()">
+    <div class="bg-white w-full sm:max-w-2xl sm:rounded-2xl rounded-t-2xl max-h-[88vh] flex flex-col">
+      <!-- header -->
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div>
+          <div class="font-semibold text-slate-900 text-sm" x-text="'💬 追问 · ' + consultLabel"></div>
+          <div class="text-xs text-slate-400">单一学派视角 · 有盲区 · 仅供理解参考</div>
+        </div>
+        <button @click="closeConsult()" class="text-slate-400 hover:text-slate-700 text-xl leading-none">×</button>
+      </div>
+      <!-- 诚实横幅（复用服务端单一真相源） -->
+      <div x-show="forecast && forecast.honest_frame" class="bg-rose-50 border-b border-rose-200 px-5 py-3 text-xs text-rose-700">
+        <span class="font-semibold" x-text="forecast && forecast.honest_frame && forecast.honest_frame.not_advice"></span>
+        — <span x-text="forecast && forecast.honest_frame && forecast.honest_frame.what_we_deliver"></span>
+      </div>
+      <!-- 对话区 -->
+      <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4 text-sm">
+        <p x-show="consultLog.length === 0" class="text-slate-400 text-center py-6">
+          问问这位经济学家：它为什么这么判断？哪些信号最关键？这类判断历史上多准？<br>
+          <span class="text-slate-300">（它不会给买卖/配置指令——那是你自己的决定）</span>
+        </p>
+        <template x-for="(turn, i) in consultLog" :key="i">
+          <div class="space-y-2">
+            <div class="flex justify-end">
+              <div class="bg-slate-900 text-white rounded-2xl rounded-br-sm px-3 py-2 max-w-[80%]" x-text="turn.q"></div>
+            </div>
+            <div class="flex justify-start">
+              <div class="bg-slate-100 text-slate-800 rounded-2xl rounded-bl-sm px-3 py-2 max-w-[85%] whitespace-pre-wrap leading-relaxed" x-text="turn.a"></div>
+            </div>
+          </div>
+        </template>
+        <div x-show="consultBusy" class="text-slate-400 text-xs">推理中…</div>
+      </div>
+      <!-- 输入区 -->
+      <div class="px-5 py-3 border-t border-slate-100 flex gap-2">
+        <input x-model="consultQ" @keydown.enter="askConsult()"
+               :disabled="consultBusy"
+               placeholder="例：你为什么判 down？哪个信号最关键？这类你历史上多准？"
+               class="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200 focus:border-slate-400 focus:outline-none">
+        <button @click="askConsult()" :disabled="consultBusy || !consultQ.trim()"
+                :class="(consultBusy || !consultQ.trim()) ? 'bg-slate-200 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'"
+                class="px-4 py-2 rounded-lg text-sm font-medium transition-colors">问</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Footer ─────────────────────────────────────────────── -->
+  <footer class="mt-16 pt-6 border-t border-slate-200 flex justify-between items-center text-xs text-slate-400">
+    <span>Hindcast · 鉴往 v0.5 · 诚实推理实验室，非预测器 · 仅供参考，非投资 / 配置建议（16/17/18-ADR）</span>
+    <a href="/docs" class="hover:text-slate-700">API docs →</a>
+  </footer>
+</div>
+
+<script>
+function hindcast() {
+  return {
+    tab: 'history',
+    snapshots: [],
+    selected: null,
+    state: null,
+    loadingState: false,
+    running: false,
+    mode: null,
+    forecast: null,
+    modulation: null,
+    realtimeState: null,
+    realtimeValues: {},
+    eventText: '',
+
+    consultSchool: null,
+    consultLabel: '',
+    consultQ: '',
+    consultLog: [],
+    consultBusy: false,
+    consultCtx: '',
+
+    schoolLabels: {
+      austrian: '🦘 奥地利学派',
+      monetarist: '📊 货币主义',
+      keynesian: '🏛️ 凯恩斯主义',
+      rational_expectations: '🧮 理性预期',
+    },
+
+    async init() { await this.loadSnapshots(); },
+
+    async loadSnapshots() {
+      const r = await fetch('/api/snapshots');
+      this.snapshots = (await r.json()).filter(s => s.as_of !== '2026-05-14');
+    },
+
+    async loadToday() {
+      const r = await fetch('/api/today');
+      this.realtimeState = await r.json();
+      this.realtimeValues = {};
+      this.realtimeState.variables.forEach(v => this.realtimeValues[v.id] = v.value);
+    },
+
+    switchTab(t) {
+      this.tab = t;
+      this.forecast = null;
+      this.modulation = null;
+      if (t === 'realtime' && !this.realtimeState) this.loadToday();
+    },
+
+    async selectSnapshot(snap) {
+      this.selected = snap;
+      this.forecast = null;
+      this.modulation = null;
+      this.loadingState = true;
+      const r = await fetch(`/api/state/${snap.as_of}`);
+      this.state = await r.json();
+      this.loadingState = false;
+    },
+
+    async runPredict(modeName) {
+      this.running = true;
+      this.mode = modeName;
+      this.forecast = null;
+      this.modulation = null;
+      try {
+        let r;
+        if (modeName === 'history') {
+          r = await fetch(`/api/predict/${this.selected.as_of}`, { method: 'POST' });
+        } else {
+          r = await fetch('/api/predict-custom', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ as_of: '2026-05-14', label: '🔮 看当下结构', values: this.realtimeValues }),
+          });
+        }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        this.forecast = await r.json();
+      } catch (e) {
+        alert('预测失败：' + e.message);
+      } finally {
+        this.running = false;
+        this.mode = null;
+      }
+    },
+
+    async runEventModulation() {
+      if (!this.eventText.trim()) return;
+      this.running = true;
+      this.mode = 'event';
+      this.forecast = null;
+      this.modulation = null;
+      try {
+        const r = await fetch('/api/predict-with-event', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            as_of: '2026-05-14', label: '🔮 看当下结构 + 事件',
+            values: this.realtimeValues, event_text: this.eventText,
+          }),
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        this.forecast = {
+          as_of: data.as_of, label: '当下结构推演', asset: 'XAU/USD',
+          is_unanimous: false, is_split: false,
+          horizons: data.baseline.horizons, verdicts: data.baseline.verdicts,
+          honest_frame: data.honest_frame, stance: data.stance,
+        };
+        this.modulation = data;
+      } catch (e) {
+        alert('事件修正失败：' + e.message);
+      } finally {
+        this.running = false;
+        this.mode = null;
+      }
+    },
+
+    openConsult(v) {
+      this.consultSchool = v.school;
+      this.consultLabel = this.schoolName(v.school);
+      this.consultLog = [];
+      this.consultQ = '';
+      const dirs = v.verdict ? `T+5 ${this.arrow(v.verdict['T+5'].dir)} / T+20 ${this.arrow(v.verdict['T+20'].dir)}` : '';
+      this.consultCtx = [
+        dirs && `本派对当前局面方向判断：${dirs}`,
+        v.attribution_note && `依据：${v.attribution_note}`,
+        (v.top_signals && v.top_signals.length) && `关键信号：${v.top_signals.join('、')}`,
+        v.reasoning && `推理：${v.reasoning}`,
+      ].filter(Boolean).join('\n');
+    },
+
+    closeConsult() { this.consultSchool = null; },
+
+    async askConsult() {
+      const q = this.consultQ.trim();
+      if (!q || this.consultBusy) return;
+      this.consultBusy = true;
+      this.consultQ = '';
+      try {
+        const r = await fetch('/api/consult', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ school: this.consultSchool, question: q, context: this.consultCtx }),
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        this.consultLog.push({ q, a: data.answer });
+      } catch (e) {
+        this.consultLog.push({ q, a: '[咨询失败] ' + e.message });
+      } finally {
+        this.consultBusy = false;
+      }
+    },
+
+    schoolName(s) { return this.schoolLabels[s] || s; },
+    arrow(d) { return ({ up: '↑', down: '↓', flat: '→', NO_SIGNAL: '?' })[d] || '—'; },
+    vcLabel(c) {
+      return ({
+        exogenous_shock: '🎯 逻辑驱动',
+        endogenous_technical: '⚡ 技术性',
+        stochastic_noise: '🌫️ 噪声',
+        structural_break: '🔥 结构断裂',
+      })[c] || c;
+    },
+    formatValue(v) {
+      if (v === null || v === undefined) return 'N/A';
+      if (typeof v !== 'number') return String(v);
+      if (Math.abs(v) < 0.01) return v.toFixed(4);
+      if (Math.abs(v) < 1) return v.toFixed(3);
+      return v.toFixed(2);
+    },
+  };
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hindcast · 鉴往 — Variant B (Datasheet)</title>
+  <style>
+    :root {
+      --ink: #0f172a; --ink-2: #334155; --ink-3: #64748b; --ink-4: #94a3b8;
+      --line: #e2e8f0; --line-2: #f1f5f9; --paper: #fff; --paper-warm: #fafaf9;
+      --amber: #d97706; --amber-bg: #fef3c7;
+      --up: #dc2626; --down: #16a34a; --flat: #94a3b8;
+      --hit: #16a34a; --miss: #dc2626;
+      --sch-aus: #d97706; --sch-mon: #2563eb; --sch-key: #059669; --sch-rat: #7c3aed;
+      --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+      background: var(--paper-warm); color: var(--ink); font-size: 14px; line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .num, code { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+    .layout { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+    @media (max-width: 768px) { .layout { grid-template-columns: 1fr; } }
+
+    /* Sidebar */
+    .side {
+      background: var(--paper);
+      border-right: 1px solid var(--line);
+      padding: 28px 20px;
+      position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    }
+    .side h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+    .side .cn { color: var(--ink-3); font-weight: 500; margin-left: 6px; }
+    .side .blurb { font-size: 12px; color: var(--ink-3); margin-top: 8px; line-height: 1.55; }
+    .side nav { margin-top: 28px; display: flex; flex-direction: column; gap: 2px; }
+    .side nav a {
+      display: block; padding: 8px 10px; font-size: 13px; color: var(--ink-2);
+      text-decoration: none; border-radius: 4px; border-left: 2px solid transparent;
+    }
+    .side nav a.active { color: var(--ink); background: var(--line-2); border-left-color: var(--ink); font-weight: 600; }
+    .side nav a:hover { background: var(--line-2); }
+    .side .stat {
+      margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--line);
+      font-size: 12px; color: var(--ink-3);
+    }
+    .side .stat .num { font-size: 20px; font-weight: 700; color: var(--hit); display: block; }
+
+    /* Main */
+    .main { padding: 36px 48px; max-width: 880px; }
+    @media (max-width: 768px) { .main { padding: 24px 20px; } }
+
+    h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 4px; }
+    .sec-meta { font-size: 12px; color: var(--ink-4); margin-bottom: 20px; }
+    section { margin-bottom: 56px; }
+
+    /* Historical scenario picker — table style */
+    table.scenarios { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.scenarios th { text-align: left; font-weight: 600; font-size: 11px; color: var(--ink-4); text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+    table.scenarios td { padding: 10px 12px; border-bottom: 1px solid var(--line-2); vertical-align: top; }
+    table.scenarios tr.row { cursor: pointer; transition: background .15s; }
+    table.scenarios tr.row:hover { background: var(--paper); }
+    table.scenarios tr.row.active { background: var(--ink); color: var(--paper); }
+    table.scenarios tr.row.active td { border-bottom-color: var(--ink); }
+    .date-cell { font-family: var(--mono); font-weight: 600; }
+    .event-cell { color: var(--ink-3); font-size: 12px; }
+    tr.row.active .event-cell { color: rgba(255,255,255,0.7); }
+
+    /* Result block — data-sheet style */
+    .verdict-sheet {
+      background: var(--paper); border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+      margin-top: 24px;
+    }
+    .vs-row {
+      display: grid; grid-template-columns: 100px 1fr 1fr; align-items: center;
+      border-bottom: 1px solid var(--line-2); padding: 16px 20px;
+    }
+    .vs-row:last-child { border-bottom: none; }
+    .vs-label { font-size: 11px; color: var(--ink-4); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+    .vs-arrow { font-size: 36px; font-weight: 800; line-height: 1; }
+    .dir-up   { color: var(--up); }
+    .dir-down { color: var(--down); }
+    .dir-flat { color: var(--flat); }
+    .vs-detail { font-size: 13px; color: var(--ink-3); font-family: var(--mono); }
+
+    .truth-row { background: #fffbeb; border-top: 1px solid #fde68a; }
+    .truth-row .vs-label { color: var(--amber); }
+    .badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 3px; letter-spacing: 0.04em; }
+    .b-hit { background: #dcfce7; color: var(--hit); }
+    .b-miss { background: #fee2e2; color: var(--miss); }
+
+    /* School cards as inline list */
+    .schools {
+      margin-top: 24px;
+      display: grid; grid-template-columns: 1fr; gap: 0;
+      background: var(--paper); border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+    }
+    .school-row {
+      display: grid; grid-template-columns: 24px 160px 90px 90px 70px 1fr;
+      padding: 12px 20px; align-items: center; gap: 12px;
+      border-bottom: 1px solid var(--line-2);
+      font-size: 13px;
+    }
+    .school-row:last-child { border-bottom: none; }
+    .school-row.noise { opacity: 0.5; filter: grayscale(0.5); }
+    .school-row.break { background: #fef2f2; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .d-aus { background: var(--sch-aus); } .d-mon { background: var(--sch-mon); }
+    .d-key { background: var(--sch-key); } .d-rat { background: var(--sch-rat); }
+    .school-name { font-weight: 600; }
+    .school-arrow { font-size: 20px; font-weight: 700; font-family: var(--mono); }
+    .school-range { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+    .vc-tag { font-size: 10px; padding: 2px 6px; border-radius: 999px; font-family: var(--mono); }
+    .vc-exo { background: #dcfce7; color: #166534; }
+    .vc-tec { background: #ffedd5; color: #9a3412; }
+    .vc-noi { background: var(--line-2); color: var(--ink-3); }
+    .vc-brk { background: #fee2e2; color: #991b1b; }
+    .conf {
+      font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .conf-bar { width: 32px; height: 3px; background: var(--line-2); border-radius: 2px; overflow: hidden; }
+    .conf-fill { height: 100%; background: var(--ink); }
+    .expand-link { color: var(--ink-3); font-size: 11px; text-decoration: underline; cursor: pointer; }
+
+    .reasoning-detail {
+      padding: 16px 20px 20px 76px; background: var(--paper-warm); border-bottom: 1px solid var(--line-2);
+      font-size: 12px; color: var(--ink-2); line-height: 1.6;
+    }
+
+    /* CTA bar */
+    .cta-bar {
+      margin-top: 20px; padding: 16px 20px; background: var(--paper);
+      border: 1px solid var(--line); border-radius: 8px;
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    }
+    .cta-btn {
+      padding: 10px 18px; font-size: 13px; font-weight: 600;
+      background: var(--ink); color: var(--paper); border: 1px solid var(--ink); border-radius: 5px;
+      cursor: pointer; font-family: inherit;
+    }
+    .cta-btn:hover { background: #1e293b; }
+    .cta-btn.amber { background: var(--amber); border-color: var(--amber); }
+    .cta-meta { font-size: 11px; color: var(--ink-4); font-family: var(--mono); margin-left: auto; }
+
+    /* Footer */
+    .foot {
+      margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line);
+      font-size: 11px; color: var(--ink-4); display: flex; justify-content: space-between;
+    }
+    .foot .disclaim { font-weight: 600; color: var(--ink-3); }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- Sidebar (FRED-style nav) -->
+  <aside class="side">
+    <h1>Hindcast<span class="cn">鉴往</span></h1>
+    <p class="blurb">AI 经济学家 · 黄金路径<br>4 学派对 XAU/USD 的诚实预测</p>
+
+    <nav>
+      <a href="#historical" class="active">历史模拟</a>
+      <a href="#realtime">实时预测</a>
+      <a href="#methodology">方法论 (ADR-002)</a>
+      <a href="#backtest">回测记录 (75%)</a>
+    </nav>
+
+    <div class="stat">
+      <span class="num">75%</span>
+      W3 命中率 · N=8 · anti-hallucination 严格执行
+    </div>
+  </aside>
+
+  <!-- Main column -->
+  <main class="main">
+
+    <section id="historical">
+      <h2>历史模拟</h2>
+      <p class="sec-meta">8 个 USD hegemony 时点 · 1971 → 2022 · 选择一个让 4 学派"在当时的信息条件下"预测</p>
+
+      <table class="scenarios">
+        <thead>
+          <tr>
+            <th style="width: 110px;">DATE</th>
+            <th style="width: 160px;">EVENT</th>
+            <th>CONTEXT</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="row active">
+            <td class="date-cell">1971-08-15</td>
+            <td>Nixon Shock</td>
+            <td class="event-cell">美国关闭金兑换窗口，布雷顿森林瓦解。USD share 永久下移。</td>
+          </tr>
+          <tr class="row">
+            <td class="date-cell">1973-10-17</td>
+            <td>Oil Embargo</td>
+            <td class="event-cell">OPEC 石油禁运。GPR ↑ 黄金/油价齐飞。</td>
+          </tr>
+          <tr class="row">
+            <td class="date-cell">1979-10-06</td>
+            <td>Volcker Tightening</td>
+            <td class="event-cell">沃尔克 saturday-night-massacre。22 月后金价崩塌。</td>
+          </tr>
+          <tr class="row">
+            <td class="date-cell">1992-09-16</td>
+            <td>Black Wednesday</td>
+            <td class="event-cell">索罗斯做空英镑，ERM 体系破裂。汇率机制信号。</td>
+          </tr>
+          <tr class="row">
+            <td class="date-cell">2008-09-15</td>
+            <td>Lehman</td>
+            <td class="event-cell">全球流动性危机。先崩 (USD 避险) 后涨 (QE)。</td>
+          </tr>
+          <tr class="row">
+            <td class="date-cell">2018-07-06</td>
+            <td>Trade War</td>
+            <td class="event-cell">340 亿关税生效。中美脱钩 narrative 起点。</td>
+          </tr>
+          <tr class="row">
+            <td class="date-cell">2020-03-23</td>
+            <td>COVID Crash</td>
+            <td class="event-cell">Fed 无限 QE。资产先崩后涨，金/股同方向。</td>
+          </tr>
+          <tr class="row">
+            <td class="date-cell">2022-02-24</td>
+            <td>Russia / SWIFT</td>
+            <td class="event-cell">俄罗斯被踢出 SWIFT。央行黄金购买 4 倍化。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="cta-bar">
+        <button class="cta-btn">▶ 让 4 学派看 1971-08-15</button>
+        <span class="cta-meta">~30s · $0.02 · 4 schools × T+5 / T+20</span>
+      </div>
+    </section>
+
+    <!-- ─── Result region ─── -->
+    <section>
+      <h2>预测结论 · XAU/USD</h2>
+      <p class="sec-meta">基于当时 15 个结构变量 · 不允许模型使用 1971 年之后的数据</p>
+
+      <div class="verdict-sheet">
+        <div class="vs-row">
+          <span class="vs-label">T+5</span>
+          <span class="vs-arrow dir-up">↑</span>
+          <span class="vs-detail">vote: up:3 down:1 flat:0 · 多数票</span>
+        </div>
+        <div class="vs-row">
+          <span class="vs-label">T+20</span>
+          <span class="vs-arrow dir-up">↑</span>
+          <span class="vs-detail">vote: up:4 down:0 flat:0 · ✓ 一致</span>
+        </div>
+
+        <div class="vs-row truth-row">
+          <span class="vs-label">T+5 实际</span>
+          <span class="vs-arrow dir-up">↑</span>
+          <span class="vs-detail">+2.4% &nbsp;&nbsp; <span class="badge b-hit">✓ HIT</span></span>
+        </div>
+        <div class="vs-row truth-row">
+          <span class="vs-label">T+20 实际</span>
+          <span class="vs-arrow dir-down">↓</span>
+          <span class="vs-detail">-3.1% &nbsp;&nbsp; <span class="badge b-miss">✗ MISS</span></span>
+        </div>
+      </div>
+
+      <div class="schools">
+        <div class="school-row">
+          <span class="dot d-aus"></span>
+          <span class="school-name">奥地利学派</span>
+          <span class="school-arrow dir-up">↑ T+5</span>
+          <span class="school-arrow dir-up">↑ T+20</span>
+          <span class="vc-tag vc-exo">逻辑驱动</span>
+          <span class="conf"><div class="conf-bar"><div class="conf-fill" style="width:78%"></div></div> 0.78 · <span class="expand-link">详情 ▾</span></span>
+        </div>
+        <div class="reasoning-detail">
+          法币信用累积裂痕。当 V13 (USD share in SWIFT) 跌破 60% 门槛时，逃离美元 → 黄金链条启动。<br>
+          <span style="color: var(--ink-4); font-family: var(--mono); font-size: 11px;">signals: V13↓ V9↑ · precedents: 1971, 1979 · range: T+5 [1.2, 3.8]% / T+20 [4.5, 11.2]%</span>
+        </div>
+
+        <div class="school-row">
+          <span class="dot d-mon"></span>
+          <span class="school-name">货币主义</span>
+          <span class="school-arrow dir-flat">→ T+5</span>
+          <span class="school-arrow dir-up">↑ T+20</span>
+          <span class="vc-tag vc-tec">技术性</span>
+          <span class="conf"><div class="conf-bar"><div class="conf-fill" style="width:62%"></div></div> 0.62 · <span class="expand-link">详情 ▾</span></span>
+        </div>
+
+        <div class="school-row noise">
+          <span class="dot d-key"></span>
+          <span class="school-name">凯恩斯主义</span>
+          <span class="school-arrow dir-flat">→ T+5</span>
+          <span class="school-arrow dir-up">↑ T+20</span>
+          <span class="vc-tag vc-noi">噪声</span>
+          <span class="conf"><div class="conf-bar"><div class="conf-fill" style="width:34%"></div></div> 0.34 · <span class="expand-link">详情 ▾</span></span>
+        </div>
+
+        <div class="school-row">
+          <span class="dot d-rat"></span>
+          <span class="school-name">理性预期</span>
+          <span class="school-arrow dir-up">↑ T+5</span>
+          <span class="school-arrow dir-up">↑ T+20</span>
+          <span class="vc-tag vc-exo">逻辑驱动</span>
+          <span class="conf"><div class="conf-bar"><div class="conf-fill" style="width:71%"></div></div> 0.71 · <span class="expand-link">详情 ▾</span></span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer class="foot" style="padding: 20px 48px;">
+  <span class="disclaim">不是投资建议 · ADR-002 anti-hallucination protocol</span>
+  <span>Hindcast 鉴往 v0.5 · variant B (datasheet)</span>
+</footer>
+</body>
+</html>

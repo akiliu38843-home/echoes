@@ -1,0 +1,30 @@
+# Render 部署蓝图（后端：会诊引擎 + API）。
+# Render 是真实服务器，请求不受 Vercel 那种 60s serverless 上限约束，
+# 适合本应用 60–90s 的会诊接口。
+#
+# 用法：Render 控制台 → New → Blueprint → 选 echoes 仓库 → 它读本文件 →
+#       填 OPENAI_API_KEY / MANIFESTO_API_KEY（sync:false 的需手填）→ Deploy。
+services:
+  - type: web
+    name: echoes-api
+    runtime: python
+    plan: free
+    region: singapore
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn hindcast.web:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/trending
+    envVars:
+      - key: PYTHONPATH
+        value: src
+      - key: PYTHON_VERSION
+        value: "3.12.6"
+      - key: OPENAI_BASE_URL
+        value: https://api.deepseek.com/v1
+      - key: HINDCAST_MODEL
+        value: deepseek-chat
+      - key: ALLOWED_ORIGINS
+        value: "*"
+      - key: OPENAI_API_KEY
+        sync: false      # 手填：你的 DeepSeek API key
+      - key: MANIFESTO_API_KEY
+        sync: false      # 手填（可选，没有也能跑）

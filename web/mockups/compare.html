@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hindcast · 鉴往 — Design comparison board</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+      background: #0f172a; color: #f8fafc; -webkit-font-smoothing: antialiased;
+    }
+    header {
+      padding: 20px 32px;
+      border-bottom: 1px solid #334155;
+      display: flex; align-items: baseline; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+    }
+    header h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+    header h1 span { color: #94a3b8; font-weight: 400; margin-left: 8px; font-size: 13px; }
+    header .meta { font-size: 12px; color: #94a3b8; font-family: ui-monospace, monospace; }
+    .controls {
+      padding: 12px 32px; background: #1e293b; border-bottom: 1px solid #334155;
+      display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
+    }
+    .controls label { font-size: 12px; color: #cbd5e1; display: flex; align-items: center; gap: 6px; }
+    .controls select, .controls input[type=range] {
+      background: #0f172a; color: #f8fafc; border: 1px solid #475569; border-radius: 4px;
+      padding: 4px 8px; font: inherit; font-size: 12px;
+    }
+    .grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 2px;
+      background: #334155; min-height: calc(100vh - 130px);
+    }
+    @media (max-width: 1024px) { .grid { grid-template-columns: 1fr; } }
+    .pane { background: #fafaf9; position: relative; overflow: hidden; }
+    .pane-label {
+      position: absolute; top: 12px; left: 12px; z-index: 10;
+      padding: 6px 12px; background: #0f172a; color: #f8fafc;
+      border-radius: 4px; font-size: 11px; font-weight: 600;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      font-family: ui-monospace, monospace;
+    }
+    .pane iframe {
+      width: 100%; height: 100%; min-height: 600px; border: 0; display: block;
+      transform-origin: top left;
+    }
+    .notes {
+      padding: 32px; background: #0f172a; border-top: 1px solid #334155;
+      max-width: 1200px; margin: 0 auto;
+    }
+    .notes h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #f8fafc; }
+    .compare-table { width: 100%; border-collapse: collapse; font-size: 13px; color: #cbd5e1; }
+    .compare-table th, .compare-table td {
+      padding: 10px 14px; text-align: left; vertical-align: top;
+      border-bottom: 1px solid #334155;
+    }
+    .compare-table th {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+      color: #94a3b8; font-weight: 600;
+    }
+    .compare-table .a-col { color: #fbbf24; font-weight: 600; }
+    .compare-table .b-col { color: #60a5fa; font-weight: 600; }
+    .pick {
+      margin-top: 24px; padding: 20px; background: #1e293b; border-radius: 8px;
+      display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
+    }
+    .pick strong { color: #fbbf24; font-size: 14px; }
+    .pick small { color: #94a3b8; font-size: 12px; }
+    .cmd {
+      font-family: ui-monospace, monospace; font-size: 11px;
+      background: #0f172a; color: #34d399; padding: 8px 12px; border-radius: 4px;
+      border: 1px solid #334155; display: inline-block; margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Hindcast 鉴往 <span>· design comparison · DESIGN_SKETCH mode (no vision API)</span></h1>
+  <div class="meta">2 variants · 2026-05-14 · screen: hindcast-app</div>
+</header>
+
+<div class="controls">
+  <label>Viewport
+    <select id="vp">
+      <option value="100%">100% (desktop)</option>
+      <option value="1024px">1024px (laptop)</option>
+      <option value="768px">768px (tablet)</option>
+      <option value="375px">375px (mobile)</option>
+    </select>
+  </label>
+  <label>Zoom
+    <input type="range" id="zoom" min="0.4" max="1.2" step="0.1" value="0.7">
+    <span id="zoom-val" style="font-family: ui-monospace, monospace; font-size: 11px;">0.7×</span>
+  </label>
+  <span style="color: #64748b; font-size: 11px; margin-left: auto;">→ pick your favorite in the compare table below</span>
+</div>
+
+<div class="grid">
+  <div class="pane">
+    <span class="pane-label">Variant A · Billboard (current /web/index-v2.html)</span>
+    <iframe id="fa" src="../index-v2.html" loading="lazy"></iframe>
+  </div>
+  <div class="pane">
+    <span class="pane-label">Variant B · Datasheet (FRED-style)</span>
+    <iframe id="fb" src="variant-b-datasheet.html" loading="lazy"></iframe>
+  </div>
+</div>
+
+<div class="notes">
+  <h2>Design dimension breakdown</h2>
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Dimension</th>
+        <th class="a-col">A · Billboard</th>
+        <th class="b-col">B · Datasheet</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Mode switching</td>
+        <td class="a-col">Segmented tabs at top</td>
+        <td class="b-col">Sticky sidebar nav</td>
+        <td>A is mobile-friendly; B feels more like research portal</td>
+      </tr>
+      <tr>
+        <td>Scenario picker</td>
+        <td class="a-col">Horizontal year cards (scrollable)</td>
+        <td class="b-col">Vertical table with date + event + context</td>
+        <td>A is faster visually; B carries more info per row</td>
+      </tr>
+      <tr>
+        <td>Hero verdict</td>
+        <td class="a-col">2-cell billboard, 4xl arrow + vote pill</td>
+        <td class="b-col">3-col data row (label / arrow / detail)</td>
+        <td>A wins on "billboard at 60mph" test; B wins on density</td>
+      </tr>
+      <tr>
+        <td>Ground truth</td>
+        <td class="a-col">Separate amber strip below hero</td>
+        <td class="b-col">Inlined into same verdict-sheet as predictions</td>
+        <td>A separates fact from prediction; B makes HIT/MISS instant</td>
+      </tr>
+      <tr>
+        <td>4-school layout</td>
+        <td class="a-col">2-col grid of full cards (reasoning expandable)</td>
+        <td class="b-col">1-row-per-school list (compact)</td>
+        <td>A gives each school visual weight; B easier to scan all 4</td>
+      </tr>
+      <tr>
+        <td>stochastic_noise treatment</td>
+        <td class="a-col">opacity 0.55 + grayscale on whole card</td>
+        <td class="b-col">opacity 0.5 + grayscale on whole row</td>
+        <td>Equivalent — both surface "weak signal" visually (ADR-002)</td>
+      </tr>
+      <tr>
+        <td>Confidence display</td>
+        <td class="a-col">Horizontal bar in card body (CONF strip)</td>
+        <td class="b-col">Inline 32px mini-bar in row</td>
+        <td>A more prominent; B is more index-card</td>
+      </tr>
+      <tr>
+        <td>Realtime accent</td>
+        <td class="a-col">Amber tab underline + amber CTA</td>
+        <td class="b-col">Amber would highlight realtime section heading</td>
+        <td>A makes the mode obvious from chrome alone</td>
+      </tr>
+      <tr>
+        <td>Pretext integration</td>
+        <td class="a-col">data-pretext on prose + ResizeObserver + MutationObserver</td>
+        <td class="b-col">Static mockup (no Pretext wired in this variant)</td>
+        <td>A is the production candidate; B is a layout-sketch only</td>
+      </tr>
+      <tr>
+        <td>Mobile collapse</td>
+        <td class="a-col">2-col → 1-col, sidebar→top tabs, all clean</td>
+        <td class="b-col">Sidebar disappears (TBD nav fallback)</td>
+        <td>A is mobile-complete; B would need work</td>
+      </tr>
+      <tr>
+        <td>File size</td>
+        <td class="a-col">~28 KB HTML + 30 KB pretext.js sibling</td>
+        <td class="b-col">~12 KB HTML (static, no JS)</td>
+        <td>A is functional; B is a wireframe</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="pick">
+    <div>
+      <strong>Recommendation:</strong>
+      <small>Ship Variant A as <code>web/index-v2.html</code>. It honors all 5 ADR-002 hard requirements visibly (confidence bars, volatility pills, noise card greying, ground-truth HIT/MISS at equal visual weight, footer disclaimer), is Pretext-native per design-html SKILL.md (Tier 1), and includes static-preview fallbacks so it opens via <code>file://</code> with demo data even when the backend API isn't running.</small>
+      <br>
+      <span class="cmd">open /Users/a26976/Desktop/Hindcast-鉴往/hindcast/web/index-v2.html</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  const fa = document.getElementById('fa');
+  const fb = document.getElementById('fb');
+  const vp = document.getElementById('vp');
+  const zoom = document.getElementById('zoom');
+  const zoomVal = document.getElementById('zoom-val');
+
+  function apply() {
+    const w = vp.value;
+    const z = parseFloat(zoom.value);
+    for (const f of [fa, fb]) {
+      f.style.width = w;
+      f.style.transform = `scale(${z})`;
+      f.style.transformOrigin = 'top left';
+      // compensate height
+      f.style.height = `${100 / z}%`;
+    }
+    zoomVal.textContent = `${z.toFixed(1)}×`;
+  }
+  vp.addEventListener('change', apply);
+  zoom.addEventListener('input', apply);
+  apply();
+</script>
+</body>
+</html>

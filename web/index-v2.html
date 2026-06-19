@@ -1,0 +1,2061 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Hindcast · 鉴往 — 4 AI 经济学派对 XAU/USD 的诚实预测 (ADR-002 反幻觉协议)">
+  <title>Hindcast · 鉴往 — AI 经济学家 · 黄金路径</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    /* ── Design tokens (DESIGN.md candidate) ───────────────── */
+    :root {
+      --ink:        #0f172a;  /* slate-900   primary text + nav */
+      --ink-2:      #334155;  /* slate-700   secondary text */
+      --ink-3:      #64748b;  /* slate-500   tertiary */
+      --ink-4:      #94a3b8;  /* slate-400   metadata */
+      --line:       #e2e8f0;  /* slate-200   1px dividers */
+      --line-2:     #f1f5f9;  /* slate-100   subtle rules */
+      --paper:      #ffffff;
+      --paper-warm: #fafaf9;  /* stone-50    body background */
+
+      --amber:      #d97706;  /* amber-600   REAL-TIME only */
+      --amber-bg:   #fef3c7;  /* amber-100 */
+      --amber-line: #fde68a;  /* amber-200 */
+
+      --up:         #dc2626;  /* gold up = USD weak */
+      --down:       #16a34a;  /* gold down */
+      --flat:       #94a3b8;
+
+      --sch-aus: #d97706;  /* austrian */
+      --sch-mon: #2563eb;  /* monetarist */
+      --sch-key: #059669;  /* keynesian */
+      --sch-rat: #7c3aed;  /* rational_expectations */
+
+      --vc-exo-bg: #dcfce7; --vc-exo-fg: #166534;  /* exogenous_shock = 逻辑驱动 */
+      --vc-tec-bg: #ffedd5; --vc-tec-fg: #9a3412;  /* endogenous_technical = 技术性 */
+      --vc-noi-bg: #f1f5f9; --vc-noi-fg: #64748b;  /* stochastic_noise = 噪声 */
+      --vc-brk-bg: #fee2e2; --vc-brk-fg: #991b1b;  /* structural_break = 结构断裂 */
+
+      --hit: #16a34a;
+      --miss: #dc2626;
+
+      /* Typography scale (4 tiers — strict) */
+      --t-hero: clamp(2.75rem, 6vw, 4rem);  /* hero arrows + ground-truth arrows */
+      --t-h1:   1.5rem;   /* 24px section heading */
+      --t-h2:   1.0625rem;/* 17px card heading */
+      --t-body: 0.9375rem;/* 15px prose */
+      --t-meta: 0.75rem;  /* 12px caps metadata */
+
+      /* Spacing scale (8pt) */
+      --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px;
+      --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px;
+
+      --radius: 6px;
+      --radius-lg: 10px;
+    }
+
+    /* ── Reset / base ──────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+      font-size: var(--t-body);
+      line-height: 1.5;
+      color: var(--ink);
+      background: var(--paper-warm);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      font-feature-settings: "kern", "tnum";
+    }
+    button { font: inherit; cursor: pointer; }
+    button:focus-visible, summary:focus-visible, [contenteditable]:focus-visible {
+      outline: 2px solid var(--ink);
+      outline-offset: 2px;
+      border-radius: 3px;
+    }
+    a { color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+    a:hover { color: var(--ink); }
+    code, .num { font-family: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
+
+    /* ── Layout shell ──────────────────────────────────────── */
+    .shell {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: var(--s-8) var(--s-5);
+    }
+
+    /* ── Header (logo bar, no chrome) ──────────────────────── */
+    .topbar {
+      display: flex;
+      align-items: baseline;
+      gap: var(--s-3);
+      padding-bottom: var(--s-5);
+      border-bottom: 1px solid var(--line);
+      margin-bottom: var(--s-8);
+    }
+    .brand-mark { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+    .brand-cn   { color: var(--ink-2); font-weight: 500; }
+    .brand-sub  { color: var(--ink-4); font-size: var(--t-meta); margin-left: var(--s-3); }
+    .topbar-end { margin-left: auto; text-align: right; font-size: var(--t-meta); color: var(--ink-3); }
+    .topbar-end .num { font-weight: 700; color: var(--hit); font-size: 1rem; }
+    .topbar-end .num-detail { font-weight: 400; color: var(--ink-4); }
+
+    /* ── Tab bar (segmented) ───────────────────────────────── */
+    .tabs {
+      display: inline-flex;
+      gap: 0;
+      margin-bottom: var(--s-8);
+      border-bottom: 1px solid var(--line);
+      width: 100%;
+    }
+    .tab {
+      background: transparent;
+      border: none;
+      padding: var(--s-3) var(--s-5) var(--s-4);
+      font-size: var(--t-body);
+      font-weight: 500;
+      color: var(--ink-3);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color .15s, border-color .15s;
+    }
+    .tab[data-active="true"] { color: var(--ink); border-bottom-color: var(--ink); font-weight: 600; }
+    .tab[data-active="false"]:hover { color: var(--ink-2); }
+    .tab .ico { margin-right: var(--s-2); font-size: 1.05em; display: inline-flex; align-items: center; }
+    .tab.live[data-active="true"] { border-bottom-color: var(--amber); color: var(--amber); }
+
+    /* ── Target selector (pill row) ────────────────────── */
+    .target-row {
+      display: flex; gap: var(--s-2); align-items: center;
+      margin: var(--s-4) 0 var(--s-5) 0;
+      flex-wrap: wrap;
+    }
+    .target-label {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--ink-4); font-weight: 600;
+    }
+    .target-pill {
+      padding: 6px 14px; border-radius: 999px;
+      background: var(--paper-2);
+      border: 1px solid var(--line);
+      font-size: 13px; color: var(--ink-3);
+      cursor: pointer; transition: all .15s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .target-pill:hover { color: var(--ink-2); border-color: var(--ink-4); }
+    .target-pill[data-active="true"] {
+      background: var(--ink); color: var(--paper);
+      border-color: var(--ink); font-weight: 600;
+    }
+    .target-pill .lucide { width: 0.9em; height: 0.9em; }
+
+    /* ── Difficulty tier groups (Stripe Docs / Linear / Bloomberg 克制风格) ─── */
+    .tier-block {
+      padding: var(--s-3) 0;
+      border-top: 1px solid var(--line);
+      transition: opacity .2s;
+    }
+    .tier-block:first-of-type { border-top: none; padding-top: 0; }
+    .tier-block[data-locked="true"]  { opacity: 0.45; }
+    .tier-block[data-locked="true"]:hover { opacity: 0.75; }
+    .tier-header {
+      display: flex; align-items: baseline; gap: var(--s-3);
+      margin-bottom: var(--s-3);
+      font-size: 12px;
+    }
+    .tier-num {
+      font-family: ui-monospace, "SF Mono", monospace;
+      font-size: 11px; font-weight: 600;
+      color: var(--ink-4);
+      letter-spacing: 0.04em;
+    }
+    .tier-name {
+      font-size: 12px; font-weight: 600;
+      color: var(--ink);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tier-strength {
+      font-family: ui-monospace, monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      color: var(--ink-3);
+    }
+    .tier-tagline {
+      font-size: 11px; color: var(--ink-4);
+      font-weight: 400;
+    }
+    .tier-check {
+      font-family: ui-monospace, monospace;
+      font-size: 11px;
+      color: var(--ink-2);
+      margin-left: auto;
+      letter-spacing: 0.05em;
+    }
+    .tier-pills {
+      display: flex; flex-wrap: wrap; gap: var(--s-2);
+    }
+
+    /* refined target pill — 含右对齐 hit rate */
+    .target-pill-v2 {
+      display: inline-flex; align-items: center; gap: var(--s-3);
+      padding: 8px 14px;
+      border-radius: 8px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      font-size: 13px;
+      color: var(--ink-2);
+      cursor: pointer;
+      transition: all .12s;
+      font-family: inherit;
+    }
+    .target-pill-v2:hover {
+      border-color: var(--ink-4);
+      color: var(--ink);
+    }
+    .target-pill-v2[data-active="true"] {
+      background: var(--ink);
+      color: var(--paper);
+      border-color: var(--ink);
+    }
+    .target-pill-v2 .lucide {
+      width: 14px; height: 14px;
+      stroke-width: 1.5;
+    }
+    .target-pill-v2 .hit-rate {
+      font-family: ui-monospace, "SF Mono", monospace;
+      font-size: 11px;
+      color: var(--ink-4);
+      font-variant-numeric: tabular-nums;
+    }
+    .target-pill-v2[data-active="true"] .hit-rate { color: rgba(255,255,255,0.7); }
+
+    /* ── Progress / recommendation banner (克制版) ───────── */
+    .progress-banner {
+      display: flex; align-items: center; gap: var(--s-3);
+      padding: var(--s-3) var(--s-4);
+      border-radius: 8px;
+      background: var(--paper-2);
+      border: 1px solid var(--line);
+      border-left: 2px solid var(--ink);
+      font-size: 13px;
+      margin: var(--s-3) 0;
+    }
+    .progress-banner-body { flex: 1; min-width: 0; }
+    .progress-banner-title {
+      font-weight: 600; color: var(--ink);
+      letter-spacing: 0.01em;
+    }
+    .progress-banner-sub {
+      color: var(--ink-3); margin-top: 4px; font-size: 12px;
+      line-height: 1.5;
+    }
+    .progress-banner-action {
+      padding: 6px 12px; border-radius: 6px;
+      background: var(--ink); color: var(--paper);
+      font-size: 12px; font-weight: 500;
+      border: none; cursor: pointer;
+      transition: opacity .12s;
+    }
+    .progress-banner-action:hover { opacity: 0.85; }
+    .progress-banner-close {
+      padding: 4px 8px; color: var(--ink-4);
+      background: transparent; border: none;
+      cursor: pointer; font-size: 14px;
+    }
+    .progress-banner-close:hover { color: var(--ink-2); }
+
+    /* ── Fed Funds rate hero ────────────────────────────── */
+    .rate-verdict {
+      background: var(--paper); border: 1px solid var(--line); border-radius: 12px;
+      padding: var(--s-5); margin-top: var(--s-5);
+    }
+    .rate-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      padding-bottom: var(--s-3); margin-bottom: var(--s-4);
+      border-bottom: 1px solid var(--line-2);
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-4); font-weight: 600;
+    }
+    .rate-anchor {
+      display: flex; gap: var(--s-3); align-items: center;
+      font-size: 12px; color: var(--ink-3); margin-bottom: var(--s-4);
+      padding: var(--s-2) var(--s-3); background: var(--paper-2); border-radius: 6px;
+    }
+    .rate-anchor .num { color: var(--ink); font-weight: 600; }
+    .rate-action {
+      display: grid; grid-template-columns: 1fr auto; gap: var(--s-4); align-items: center;
+    }
+    .rate-action-name {
+      font-size: var(--t-hero); line-height: 0.95;
+      font-weight: 700; letter-spacing: -0.02em;
+    }
+    .rate-action.hike .rate-action-name { color: var(--up); }
+    .rate-action.cut  .rate-action-name { color: var(--down); }
+    .rate-action.hold .rate-action-name { color: var(--ink-3); }
+    .rate-action.NO_SIGNAL .rate-action-name { color: var(--ink-4); }
+    .rate-bps {
+      font-family: ui-monospace, "SF Mono", monospace;
+      font-size: 18px; font-weight: 600; color: var(--ink-2);
+      font-variant-numeric: tabular-nums;
+    }
+    .rate-school-card {
+      background: var(--paper); border: 1px solid var(--line); border-radius: 8px;
+      padding: var(--s-3) var(--s-4);
+    }
+    .rate-school-head {
+      display: flex; align-items: center; gap: var(--s-2);
+      margin-bottom: var(--s-3);
+    }
+    .rate-school-head .school-name { flex: 1; }
+    .rate-action-mini {
+      font-size: 24px; font-weight: 700; line-height: 1;
+    }
+    .rate-action-mini.hike { color: var(--up); }
+    .rate-action-mini.cut { color: var(--down); }
+    .rate-action-mini.hold { color: var(--ink-3); }
+    .rate-school-detail {
+      font-size: 12px; color: var(--ink-3); margin-top: var(--s-2);
+    }
+    /* Lucide outline icons — 替代 emoji（更克制、学术、与"诚实预测"调性一致） */
+    .lucide { display: inline-block; width: 1em; height: 1em; vertical-align: -0.15em; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+    .eyebrow .lucide { width: 0.9em; height: 0.9em; margin-right: 0.4em; }
+
+    /* ── Section heading (CAPS eyebrow + plain title) ──────── */
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-4);
+      margin-bottom: var(--s-3);
+    }
+
+    /* ── Timeline strip (history mode) ─────────────────────── */
+    .timeline {
+      display: flex;
+      gap: var(--s-2);
+      overflow-x: auto;
+      padding-bottom: var(--s-3);
+      margin: 0 calc(-1 * var(--s-5));
+      padding-left: var(--s-5);
+      padding-right: var(--s-5);
+      scrollbar-width: thin;
+    }
+    .timeline::-webkit-scrollbar { height: 4px; }
+    .timeline::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
+    .t-card {
+      flex: 0 0 auto;
+      min-width: 130px;
+      padding: var(--s-3) var(--s-4);
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      text-align: left;
+      transition: border-color .15s, background .15s;
+    }
+    .t-card:hover { border-color: var(--ink-4); }
+    .t-card[data-active="true"] {
+      background: var(--ink);
+      color: var(--paper);
+      border-color: var(--ink);
+    }
+    .t-card[data-active="true"] .t-card-event { color: rgba(255,255,255,0.7); }
+    .t-year { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
+    .t-card-event { font-size: var(--t-meta); color: var(--ink-3); margin-top: var(--s-1); }
+
+    .selected-event {
+      margin-top: var(--s-3);
+      padding: var(--s-3) var(--s-4);
+      background: var(--paper);
+      border-left: 3px solid var(--ink);
+      font-size: var(--t-body);
+      color: var(--ink-2);
+    }
+
+    /* ── Collapsible variable table ────────────────────────── */
+    .panel {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      margin-top: var(--s-5);
+      overflow: hidden;
+    }
+    .panel summary {
+      list-style: none;
+      cursor: pointer;
+      padding: var(--s-4) var(--s-5);
+      display: flex;
+      align-items: center;
+      gap: var(--s-3);
+      font-weight: 500;
+    }
+    .panel summary::-webkit-details-marker { display: none; }
+    .panel summary::after {
+      content: "▾";
+      margin-left: auto;
+      color: var(--ink-4);
+      transition: transform .15s;
+    }
+    .panel[open] summary::after { transform: rotate(180deg); }
+    .panel summary .pill-mini { margin-left: var(--s-2); }
+    .panel-body { padding: 0 var(--s-5) var(--s-5); }
+    .var-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      column-gap: var(--s-6);
+      row-gap: 0;
+    }
+    .var-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: var(--s-2) 0;
+      border-bottom: 1px solid var(--line-2);
+      font-size: var(--t-body);
+    }
+    .var-row:last-child { border-bottom: none; }
+    .var-id { font-size: 11px; color: var(--ink-4); min-width: 32px; }
+    .var-name { color: var(--ink-2); margin-left: var(--s-2); flex: 1; min-width: 0; }
+    .var-val { font-family: ui-monospace, "SF Mono", monospace; font-variant-numeric: tabular-nums; color: var(--ink); font-size: 0.875rem; }
+    .var-input {
+      width: 88px; text-align: right; padding: var(--s-1) var(--s-2);
+      font: inherit; font-family: ui-monospace, monospace; font-size: 0.875rem;
+      border: 1px solid var(--line); border-radius: 4px; background: var(--paper-warm);
+    }
+    .var-input:focus { outline: none; border-color: var(--ink-2); }
+
+    /* ── CTAs ──────────────────────────────────────────────── */
+    .cta-row { display: flex; gap: var(--s-3); margin-top: var(--s-6); flex-wrap: wrap; }
+    .cta {
+      padding: var(--s-4) var(--s-6);
+      font-size: var(--t-body);
+      font-weight: 600;
+      border: 1px solid var(--ink);
+      background: var(--ink);
+      color: var(--paper);
+      border-radius: var(--radius);
+      display: inline-flex;
+      align-items: center;
+      gap: var(--s-3);
+      transition: background .15s, transform .05s;
+      min-width: 220px;
+    }
+    .cta:hover:not(:disabled) { background: #1e293b; }
+    .cta:active:not(:disabled) { transform: translateY(1px); }
+    .cta:disabled { opacity: 0.4; cursor: not-allowed; }
+    .cta-accent { background: var(--amber); border-color: var(--amber); }
+    .cta-accent:hover:not(:disabled) { background: #b45309; }
+    .cta-secondary { background: var(--paper); color: var(--ink); }
+    .cta-secondary:hover:not(:disabled) { background: var(--line-2); }
+    .cta-meta { margin-left: auto; opacity: 0.7; font-size: var(--t-meta); font-weight: 400; }
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Event input ───────────────────────────────────────── */
+    .event-input {
+      width: 100%;
+      padding: var(--s-3) var(--s-4);
+      font: inherit;
+      font-size: var(--t-body);
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      resize: vertical;
+      min-height: 76px;
+      line-height: 1.5;
+    }
+    .event-input:focus { outline: none; border-color: var(--ink-2); }
+
+    /* ── HERO: verdict billboard ───────────────────────────── */
+    .verdict {
+      margin-top: var(--s-12);
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .verdict-head {
+      padding: var(--s-4) var(--s-6);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: var(--s-4);
+    }
+    .verdict-asset {
+      font-size: var(--t-meta);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+    }
+    .verdict-asset strong { color: var(--ink); margin-left: var(--s-2); }
+    .consensus-tag {
+      font-size: var(--t-meta);
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+    .consensus-unanimous { background: #dcfce7; color: #166534; }
+    .consensus-majority  { background: var(--line-2); color: var(--ink-2); }
+    .consensus-split     { background: var(--amber-bg); color: var(--amber); }
+
+    .verdict-grid {
+      display: grid;
+      grid-template-columns: 1fr 1px 1fr;
+      align-items: stretch;
+    }
+    .verdict-cell {
+      padding: var(--s-8) var(--s-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-2);
+    }
+    .verdict-divider { background: var(--line); }
+    .horizon-label {
+      font-size: var(--t-meta);
+      color: var(--ink-3);
+      font-weight: 500;
+      letter-spacing: 0.04em;
+    }
+    .horizon-arrow {
+      font-size: var(--t-hero);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.04em;
+    }
+    .horizon-detail {
+      font-size: 0.8125rem;
+      color: var(--ink-3);
+      display: flex;
+      align-items: center;
+      gap: var(--s-2);
+      margin-top: var(--s-2);
+    }
+    .vote-pill {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      font-family: ui-monospace, monospace;
+      font-size: 12px;
+      padding: 2px 8px;
+      background: var(--line-2);
+      border-radius: 4px;
+      color: var(--ink-2);
+    }
+
+    /* directional color */
+    .dir-up   { color: var(--up); }
+    .dir-down { color: var(--down); }
+    .dir-flat { color: var(--flat); }
+
+    /* ── Ground truth strip (history only) ─────────────────── */
+    .truth {
+      margin-top: var(--s-5);
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .truth-head {
+      padding: var(--s-3) var(--s-5);
+      background: var(--line-2);
+      border-bottom: 1px solid var(--line);
+      font-size: var(--t-meta);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      display: flex;
+      gap: var(--s-2);
+      align-items: center;
+    }
+    .truth-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    .truth-cell {
+      padding: var(--s-5) var(--s-6);
+      display: flex;
+      align-items: center;
+      gap: var(--s-4);
+      border-right: 1px solid var(--line);
+    }
+    .truth-cell:last-child { border-right: none; }
+    .truth-arrow { font-size: 2rem; font-weight: 800; line-height: 1; }
+    .truth-meta { flex: 1; }
+    .truth-meta .horizon-label { display: block; }
+    .truth-meta .num { color: var(--ink); font-size: 1rem; font-weight: 600; }
+    .verdict-badge {
+      font-size: var(--t-meta);
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 4px;
+      letter-spacing: 0.04em;
+    }
+    .verdict-hit  { background: #dcfce7; color: var(--hit); }
+    .verdict-miss { background: #fee2e2; color: var(--miss); }
+
+    /* ── 4-school grid ─────────────────────────────────────── */
+    .schools-section { margin-top: var(--s-8); }
+    .schools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: var(--s-3);
+    }
+    .school {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: var(--s-5);
+      transition: opacity .15s, filter .15s, border-color .15s;
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-3);
+    }
+    .school[data-vc="stochastic_noise"] {
+      opacity: 0.55;
+      filter: grayscale(0.5);
+    }
+    .school[data-vc="stochastic_noise"]:hover {
+      opacity: 1;
+      filter: none;
+    }
+    .school[data-vc="structural_break"] {
+      border-color: #fca5a5;
+      box-shadow: 0 0 0 1px #fca5a5 inset;
+    }
+    .school-head {
+      display: flex;
+      align-items: center;
+      gap: var(--s-2);
+    }
+    .school-dot {
+      width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+    }
+    .dot-austrian              { background: var(--sch-aus); }
+    .dot-monetarist            { background: var(--sch-mon); }
+    .dot-keynesian             { background: var(--sch-key); }
+    .dot-rational_expectations { background: var(--sch-rat); }
+    .school-name { font-size: var(--t-h2); font-weight: 600; color: var(--ink); }
+
+    .vc-pill {
+      font-family: ui-monospace, monospace;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      margin-left: auto;
+    }
+    .vc-exogenous_shock      { background: var(--vc-exo-bg); color: var(--vc-exo-fg); }
+    .vc-endogenous_technical { background: var(--vc-tec-bg); color: var(--vc-tec-fg); }
+    .vc-stochastic_noise     { background: var(--vc-noi-bg); color: var(--vc-noi-fg); }
+    .vc-structural_break     { background: var(--vc-brk-bg); color: var(--vc-brk-fg); }
+
+    /* Per-school horizon row */
+    .school-horizons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--s-3);
+      padding: var(--s-3) 0;
+      border-top: 1px solid var(--line-2);
+      border-bottom: 1px solid var(--line-2);
+    }
+    .s-horizon-label { font-size: var(--t-meta); color: var(--ink-4); }
+    .s-horizon-arrow { font-size: 1.5rem; font-weight: 700; line-height: 1.1; margin-top: var(--s-1); }
+    .s-horizon-range { font-family: ui-monospace, monospace; font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+
+    .school-attr {
+      font-size: 0.8125rem;
+      color: var(--ink-2);
+      font-style: italic;
+      line-height: 1.5;
+    }
+
+    /* Honesty strip — ADR-002 anti-hallucination surfacing */
+    .honesty {
+      display: flex;
+      align-items: center;
+      gap: var(--s-3);
+      font-size: var(--t-meta);
+      color: var(--ink-3);
+    }
+    .conf-bar {
+      flex: 1;
+      height: 4px;
+      background: var(--line-2);
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
+    }
+    .conf-fill {
+      height: 100%;
+      background: var(--ink);
+      transition: width .3s ease;
+    }
+    .conf-num { font-family: ui-monospace, monospace; color: var(--ink-2); font-weight: 600; min-width: 32px; text-align: right; }
+
+    /* Reasoning (Pretext-managed contenteditable) */
+    .school-reasoning {
+      font-size: 0.8125rem;
+      color: var(--ink-2);
+      line-height: 1.55;
+    }
+    .school-reasoning summary {
+      cursor: pointer;
+      color: var(--ink-3);
+      font-weight: 500;
+      list-style: none;
+      padding: var(--s-1) 0;
+    }
+    .school-reasoning summary::-webkit-details-marker { display: none; }
+    .school-reasoning summary::before { content: "+ "; color: var(--ink-4); }
+    .school-reasoning[open] summary::before { content: "− "; }
+    .school-reasoning .reasoning-body {
+      margin-top: var(--s-2);
+      padding-top: var(--s-2);
+      border-top: 1px dashed var(--line);
+    }
+    .signals, .precedents { font-size: 11px; margin-bottom: var(--s-2); }
+    .signals .lbl, .precedents .lbl { color: var(--ink-4); margin-right: 4px; }
+    .signals .num { color: var(--ink-2); }
+    .reasoning-prose[contenteditable="true"]:hover {
+      background: rgba(15,23,42,0.02);
+      cursor: text;
+    }
+
+    /* Failed school card */
+    .school[data-failed="true"] {
+      opacity: 0.5;
+    }
+    .failed-note { color: var(--miss); font-size: var(--t-meta); font-weight: 600; }
+
+    /* ── Event modulation panel ─────────────────────────────── */
+    .modulation {
+      margin-top: var(--s-8);
+      background: var(--paper);
+      border: 1px solid var(--amber-line);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .mod-head {
+      padding: var(--s-4) var(--s-6);
+      background: var(--amber-bg);
+      border-bottom: 1px solid var(--amber-line);
+      display: flex;
+      align-items: center;
+      gap: var(--s-3);
+    }
+    .mod-head .eyebrow { color: var(--amber); margin-bottom: 0; }
+    .mod-event-text {
+      padding: var(--s-4) var(--s-6);
+      font-size: var(--t-body);
+      color: var(--ink-2);
+      border-bottom: 1px solid var(--line);
+      line-height: 1.6;
+    }
+    .mod-aggregate {
+      display: grid;
+      grid-template-columns: 1fr 1px 1fr;
+      align-items: stretch;
+      background: var(--paper-warm);
+    }
+    .mod-cell {
+      padding: var(--s-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-2);
+    }
+    .mod-delta-num {
+      font-size: 2.5rem;
+      font-weight: 800;
+      line-height: 1;
+      font-family: ui-monospace, monospace;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+    .mod-school-grid {
+      padding: var(--s-5) var(--s-5) var(--s-6);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: var(--s-3);
+      border-top: 1px solid var(--line);
+    }
+    .mod-school {
+      padding: var(--s-3) var(--s-4);
+      background: var(--paper-warm);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+    .mod-school-head {
+      display: flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-2);
+    }
+    .mod-school-name { font-size: 0.875rem; font-weight: 600; }
+    .mod-school-row { display: flex; gap: var(--s-3); }
+    .mod-school-h {
+      flex: 1;
+    }
+    .mod-school-h .num { font-family: ui-monospace, monospace; font-weight: 700; font-size: 1rem; }
+    .mod-school-h .reason { font-size: 11px; color: var(--ink-3); margin-top: 2px; font-style: italic; line-height: 1.4; }
+
+    .structural-warn {
+      margin: 0 var(--s-6) var(--s-5);
+      padding: var(--s-3) var(--s-4);
+      background: var(--vc-brk-bg);
+      color: var(--vc-brk-fg);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      font-weight: 500;
+    }
+
+    /* ── Footer ────────────────────────────────────────────── */
+    .footer {
+      margin-top: var(--s-12);
+      padding: var(--s-6) 0 var(--s-3);
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: var(--s-3);
+      flex-wrap: wrap;
+      font-size: var(--t-meta);
+      color: var(--ink-4);
+    }
+    .footer .disclaim { font-weight: 600; color: var(--ink-3); }
+    .footer-meta a { font-size: var(--t-meta); }
+
+    /* ── Empty state ───────────────────────────────────────── */
+    .empty {
+      padding: var(--s-12) var(--s-6);
+      text-align: center;
+      color: var(--ink-4);
+      font-size: var(--t-body);
+      border: 1px dashed var(--line);
+      border-radius: var(--radius-lg);
+      margin-top: var(--s-6);
+    }
+    .empty strong { color: var(--ink-2); display: block; font-size: var(--t-h2); margin-bottom: var(--s-2); }
+
+    /* ── Responsive ────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .shell { padding: var(--s-5) var(--s-4); }
+      .verdict-grid, .mod-aggregate {
+        grid-template-columns: 1fr;
+      }
+      .verdict-divider { display: none; }
+      .verdict-cell:first-child { border-bottom: 1px solid var(--line); }
+      .mod-cell:first-child { border-bottom: 1px solid var(--line); }
+      .truth-grid { grid-template-columns: 1fr; }
+      .truth-cell { border-right: none; border-bottom: 1px solid var(--line); }
+      .truth-cell:last-child { border-bottom: none; }
+      .verdict-cell { padding: var(--s-6) var(--s-5); }
+      .horizon-arrow { font-size: 3rem; }
+      .cta { width: 100%; min-width: 0; }
+      .cta-row { flex-direction: column; }
+      .tab { padding: var(--s-3) var(--s-3) var(--s-3); flex: 1; text-align: center; }
+      .schools-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --paper-warm: #0f172a;
+        --paper:      #1e293b;
+        --ink:        #f8fafc;
+        --ink-2:      #e2e8f0;
+        --ink-3:      #94a3b8;
+        --ink-4:      #64748b;
+        --line:       #334155;
+        --line-2:     #1e293b;
+      }
+      .vc-stochastic_noise { background: #1e293b; color: #94a3b8; }
+      .vc-exogenous_shock  { background: #064e3b; color: #6ee7b7; }
+      .vc-endogenous_technical { background: #431407; color: #fdba74; }
+      .vc-structural_break { background: #450a0a; color: #fca5a5; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="shell" x-data="hindcast()" x-init="init()">
+
+  <!-- ─── Topbar ─────────────────────────────────────────── -->
+  <header class="topbar">
+    <span class="brand-mark">Hindcast</span>
+    <span class="brand-cn">鉴往</span>
+    <span class="brand-sub">AI 经济学家 · 黄金路径</span>
+    <div class="topbar-end">
+      <span>W3 hit-rate · <span class="num">75%</span> <span class="num-detail">(N=8 backtest)</span></span>
+    </div>
+  </header>
+
+  <!-- ─── Tabs ──────────────────────────────────────────── -->
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" :data-active="tab === 'history'" @click="switchTab('history')">
+      <span class="ico" aria-hidden="true">
+        <!-- Lucide: history -->
+        <svg class="lucide" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+      </span>历史模拟
+    </button>
+    <button class="tab live" role="tab" :data-active="tab === 'realtime'" @click="switchTab('realtime')">
+      <span class="ico" aria-hidden="true">
+        <!-- Lucide: activity (pulse waveform) — "实时信号"比水晶球更贴 -->
+        <svg class="lucide" viewBox="0 0 24 24"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.5.5 0 0 1-.96 0L9.68 3.18a.5.5 0 0 0-.96 0l-2.35 8.36A2 2 0 0 1 4.45 13H2"/></svg>
+      </span>实时预测
+    </button>
+  </nav>
+
+  <!-- ── Prediction target selector (难度分级 · 克制专业风格) ─────── -->
+  <div style="margin: var(--s-5) 0;">
+    <div class="target-label" style="margin-bottom: var(--s-3);">PREDICTION TARGETS · BY LOGICAL HARDNESS</div>
+
+    <!-- Tier 1 · Strong Causal -->
+    <div class="tier-block" data-tier="strong">
+      <div class="tier-header">
+        <span class="tier-num">01</span>
+        <span class="tier-name">强因果 · STRONG CAUSAL</span>
+        <span class="tier-strength">●●●</span>
+        <span class="tier-tagline">公式锚定 · 推荐首选</span>
+        <span x-show="tiersCompleted.strong" class="tier-check">✓ MASTERED</span>
+      </div>
+      <div class="tier-pills">
+        <button class="target-pill-v2" :data-active="target === 'us-2y'" @click="switchTarget('us-2y')">
+          <svg class="lucide" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          <span>US 2Y</span>
+          <span class="hit-rate">94</span>
+        </button>
+        <button class="target-pill-v2" :data-active="target === 'fed-funds'" @click="switchTarget('fed-funds')">
+          <svg class="lucide" viewBox="0 0 24 24"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
+          <span>Fed Funds</span>
+          <span class="hit-rate">78</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tier 2 · Derived -->
+    <div class="tier-block" data-tier="derived" :data-locked="!tiersCompleted.strong">
+      <div class="tier-header">
+        <span class="tier-num">02</span>
+        <span class="tier-name">派生 · DERIVED</span>
+        <span class="tier-strength">●●○</span>
+        <span class="tier-tagline">双/三维, 每维都强</span>
+        <span x-show="!tiersCompleted.strong" class="tier-tagline" style="margin-left: auto; font-style: italic;">先完成 01</span>
+        <span x-show="tiersCompleted.derived" class="tier-check">✓ MASTERED</span>
+      </div>
+      <div class="tier-pills">
+        <button class="target-pill-v2" :data-active="target === 'us-10y'" @click="switchTarget('us-10y')">
+          <svg class="lucide" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          <span>US 10Y</span>
+          <span class="hit-rate">81</span>
+        </button>
+        <button class="target-pill-v2" :data-active="target === 'oil'" @click="switchTarget('oil')">
+          <svg class="lucide" viewBox="0 0 24 24"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
+          <span>WTI Crude</span>
+          <span class="hit-rate">81</span>
+        </button>
+        <button class="target-pill-v2" :data-active="target === 'fx-jpy'" @click="switchTarget('fx-jpy')">
+          <svg class="lucide" viewBox="0 0 24 24"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <span>USD/JPY</span>
+          <span class="hit-rate">75</span>
+        </button>
+        <button class="target-pill-v2" :data-active="target === 'copper'" @click="switchTarget('copper')">
+          <svg class="lucide" viewBox="0 0 24 24"><path d="M16.5 9.4 7.55 4.24"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" x2="12" y1="22.08" y2="12"/></svg>
+          <span>LME Copper</span>
+          <span class="hit-rate">69</span>
+        </button>
+        <button class="target-pill-v2" :data-active="target === 'tips'" @click="switchTarget('tips')" title="服务于 XAU 集成预测">
+          <svg class="lucide" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m7 14 3-3 4 4 5-5"/></svg>
+          <span>10Y TIPS →XAU</span>
+          <span class="hit-rate">↗</span>
+        </button>
+        <button class="target-pill-v2" :data-active="target === 'bei'" @click="switchTarget('bei')" title="服务于 XAU 集成预测">
+          <svg class="lucide" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          <span>10Y BEI →XAU</span>
+          <span class="hit-rate">↗</span>
+        </button>
+        <button class="target-pill-v2" :data-active="target === 'dxy'" @click="switchTarget('dxy')" title="服务于 XAU 集成预测">
+          <svg class="lucide" viewBox="0 0 24 24"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <span>DXY →XAU</span>
+          <span class="hit-rate">↗</span>
+        </button>
+        <button class="target-pill-v2" :data-active="target === 'fx-cnh'" @click="switchTarget('fx-cnh')"
+                title="PBoC 管制汇率, default flat. 高命中率来自政策稳定, 非真公式锚定 — 见 ADR-002 政策变量 vs 市场变量">
+          <svg class="lucide" viewBox="0 0 24 24"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <span>USD/CNH 🏛️</span>
+          <span class="hit-rate">90</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tier 3 · Multi-dimensional -->
+    <div class="tier-block" data-tier="hard" :data-locked="!tiersCompleted.derived">
+      <div class="tier-header">
+        <span class="tier-num">03</span>
+        <span class="tier-name">多维叙事 · MULTI-DIMENSIONAL</span>
+        <span class="tier-strength">●○○</span>
+        <span class="tier-tagline">5 维交织, 学派分歧最大</span>
+        <span x-show="!tiersCompleted.derived" class="tier-tagline" style="margin-left: auto; font-style: italic;">先完成 02</span>
+        <span x-show="tiersCompleted.hard" class="tier-check">✓ COMPLETED</span>
+      </div>
+      <div class="tier-pills">
+        <button class="target-pill-v2" :data-active="target === 'xau'" @click="switchTarget('xau')">
+          <svg class="lucide" viewBox="0 0 24 24"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/></svg>
+          <span>Gold · XAU/USD</span>
+          <span class="hit-rate">75</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- XAU prior banner — 显示已预测的桥梁变量 -->
+    <div x-show="target === 'xau' && Object.keys(bridgePriors).length > 0"
+         style="display: flex; gap: var(--s-3); padding: var(--s-3) var(--s-4); border-radius: 8px; background: var(--paper-2); border: 1px solid var(--line); border-left: 2px solid var(--amber); margin: var(--s-3) 0; font-size: 12px;">
+      <div style="flex: 1;">
+        <div style="font-weight: 600; color: var(--ink); margin-bottom: var(--s-2);">🌉 已有桥梁变量预测信号（将作为 XAU 集成 prior 注入）</div>
+        <template x-for="(p, k) in bridgePriors" :key="k">
+          <div style="display: flex; gap: var(--s-3); align-items: center; font-family: ui-monospace, monospace; color: var(--ink-2);">
+            <span x-text="p.label" style="min-width: 200px;"></span>
+            <span>T+5: <span :class="'dir-' + p.t5" x-text="arrow(p.t5)"></span></span>
+            <span>T+20: <span :class="'dir-' + p.t20" x-text="arrow(p.t20)"></span></span>
+          </div>
+        </template>
+        <div style="margin-top: var(--s-2); color: var(--ink-4); font-style: italic;">XAU = -TIPS × β1 + BEI × β2 + (-DXY) × β3 + GPR × β4 + 央行购金 × β5</div>
+      </div>
+      <button @click="bridgePriors = {}" style="align-self: start; padding: 4px 8px; color: var(--ink-4); background: transparent; border: none; cursor: pointer; font-size: 14px;">✕</button>
+    </div>
+
+    <!-- Progress banner (克制版) -->
+    <div x-show="progressBanner" class="progress-banner" x-transition>
+      <div class="progress-banner-body">
+        <div class="progress-banner-title" x-text="progressBanner ? progressBanner.title : ''"></div>
+        <div class="progress-banner-sub" x-text="progressBanner ? progressBanner.sub : ''"></div>
+      </div>
+      <button x-show="progressBanner && progressBanner.action"
+              @click="switchTarget(progressBanner.action); progressBanner = null"
+              class="progress-banner-action"
+              x-text="progressBanner ? progressBanner.actionLabel : ''"></button>
+      <button @click="progressBanner = null" class="progress-banner-close">✕</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- TAB A: 历史模拟                                       -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <section x-show="tab === 'history'" role="tabpanel">
+
+    <div class="eyebrow">选择历史时点</div>
+    <div class="timeline">
+      <template x-for="snap in snapshots" :key="snap.as_of">
+        <button class="t-card" :data-active="selected && selected.as_of === snap.as_of" @click="selectSnapshot(snap)">
+          <div class="t-year" x-text="snap.as_of.slice(0,4)"></div>
+          <div class="t-card-event" x-text="snap.label.replace(/\s*\([^)]+\)/g, '')"></div>
+        </button>
+      </template>
+    </div>
+
+    <p class="selected-event" x-show="selected" x-text="selected ? selected.event : ''"></p>
+
+    <details class="panel" x-show="selected && state">
+      <summary>
+        <span>当时 15 个结构变量</span>
+        <span class="pill-mini" style="font-size: 11px; color: var(--ink-4);">snapshot · 折叠</span>
+      </summary>
+      <div class="panel-body">
+        <div class="var-grid">
+          <template x-for="v in (state ? state.variables : [])" :key="v.id">
+            <div class="var-row">
+              <span class="var-id num" x-text="v.id"></span>
+              <span class="var-name" x-text="v.name"></span>
+              <span class="var-val" x-text="formatValue(v.value)"></span>
+            </div>
+          </template>
+        </div>
+      </div>
+    </details>
+
+    <div class="cta-row" x-show="selected">
+      <button class="cta" :disabled="!selected || running" @click="runPredict('history')">
+        <template x-if="!(running && mode === 'history')">
+          <span>让 4 学派看这一天</span>
+        </template>
+        <template x-if="running && mode === 'history'">
+          <span style="display:flex; gap:8px; align-items:center;"><span class="spinner"></span> 推理中…</span>
+        </template>
+        <span class="cta-meta">~30s · $0.02</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- TAB B: 实时预测                                       -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <section x-show="tab === 'realtime'" role="tabpanel">
+
+    <div class="eyebrow">今日宏观状态 · 2026-05-14</div>
+
+    <details class="panel">
+      <summary>
+        <span>15 个结构变量 · 可调整</span>
+        <button class="cta-secondary" style="margin-left:auto; padding:4px 10px; font-size:11px; border:1px solid var(--line); border-radius:4px;"
+                @click.stop.prevent="loadToday()">↻ 重置今日</button>
+      </summary>
+      <div class="panel-body">
+        <div class="var-grid">
+          <template x-for="v in (realtimeState ? realtimeState.variables : [])" :key="v.id">
+            <label class="var-row">
+              <span class="var-id num" x-text="v.id"></span>
+              <span class="var-name" x-text="v.name"></span>
+              <input class="var-input num" type="number" step="0.01"
+                     :value="realtimeValues[v.id]"
+                     @input="realtimeValues[v.id] = parseFloat($event.target.value)">
+            </label>
+          </template>
+        </div>
+      </div>
+    </details>
+
+    <div style="margin-top: var(--s-6);">
+      <div class="eyebrow">新闻事件输入 · 可选</div>
+      <textarea class="event-input" x-model="eventText" rows="3"
+        placeholder="例: 美联储紧急降息 50bp / USTR 宣布对中国新能源车 100% 关税 / 沙特宣布石油以人民币结算"></textarea>
+    </div>
+
+    <div class="cta-row">
+      <button class="cta cta-secondary" :disabled="!realtimeState || running" @click="runPredict('custom')">
+        <template x-if="!(running && mode === 'custom')"><span>只跑常态预测</span></template>
+        <template x-if="running && mode === 'custom'">
+          <span style="display:flex; gap:8px; align-items:center;"><span class="spinner"></span> 推理中…</span>
+        </template>
+        <span class="cta-meta">$0.02</span>
+      </button>
+      <button class="cta cta-accent" :disabled="!realtimeState || !eventText.trim() || running"
+              @click="runEventModulation()">
+        <template x-if="!(running && mode === 'event')"><span>常态 + 事件修正</span></template>
+        <template x-if="running && mode === 'event'">
+          <span style="display:flex; gap:8px; align-items:center;"><span class="spinner"></span> 推理中…</span>
+        </template>
+        <span class="cta-meta">$0.04</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- Shared result region: hero verdict                    -->
+  <!-- ════════════════════════════════════════════════════ -->
+
+  <!-- ── Fed Funds Rate hero ─────────────────────────── -->
+  <section x-show="target === 'fed-funds' && rateForecast" class="rate-verdict">
+    <div class="rate-head">
+      <span>美联储下次 FOMC 决议</span>
+      <span x-text="rateForecast ? rateForecast.label : ''" style="text-transform:none; letter-spacing:0; color:var(--ink-3); font-weight:400;"></span>
+    </div>
+    <div class="rate-anchor" x-show="rateForecast">
+      <span>当前 <span class="num" x-text="rateForecast ? (rateForecast.current_fed_funds.toFixed(2) + '%') : ''"></span></span>
+      <span>→</span>
+      <span>Taylor implied <span class="num" x-text="rateForecast ? (rateForecast.taylor_implied !== null ? rateForecast.taylor_implied.toFixed(2) + '%' : 'N/A') : ''"></span></span>
+      <span>·</span>
+      <span>偏离 <span class="num" :class="rateForecast && (rateForecast.taylor_implied - rateForecast.current_fed_funds) > 0.5 ? 'dir-up' : ((rateForecast.taylor_implied - rateForecast.current_fed_funds) < -0.5 ? 'dir-down' : '')"
+                     x-text="rateForecast ? ((rateForecast.taylor_implied - rateForecast.current_fed_funds).toFixed(2) + ' pp') : ''"></span></span>
+    </div>
+    <div class="rate-action" :class="rateForecast ? rateForecast.aggregate_action : ''">
+      <span class="rate-action-name" x-text="rateForecast ? actionLabel(rateForecast.aggregate_action) : ''"></span>
+      <span class="rate-bps" x-text="rateForecast ? (rateForecast.aggregate_bps > 0 ? '+' : '') + rateForecast.aggregate_bps.toFixed(0) + ' bps avg' : ''"></span>
+    </div>
+    <div style="margin-top: var(--s-3); font-size: 12px; color: var(--ink-3);">
+      投票 <span class="num" x-text="rateForecast ? voteString(rateForecast.vote_counts) : ''"></span>
+      <span x-show="rateForecast && rateForecast.is_unanimous" style="color: var(--up); margin-left: var(--s-3);">✓ 4 学派一致</span>
+      <span x-show="rateForecast && rateForecast.is_split" style="color: var(--amber); margin-left: var(--s-3);">⚠ 2:2 平局</span>
+    </div>
+  </section>
+
+  <!-- ── Fed Funds GT (history mode only) ────────────── -->
+  <section x-show="target === 'fed-funds' && tab === 'history' && rateForecast && rateGroundTruth" class="truth">
+    <div class="truth-head">
+      <span>
+        <svg class="lucide" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+        FOMC 实际决议 · ground truth
+      </span>
+    </div>
+    <div class="truth-grid">
+      <div class="truth-cell">
+        <span class="truth-arrow"
+              :class="rateGroundTruth ? ('rate-action-mini ' + rateGroundTruth.action) : ''"
+              x-text="rateGroundTruth ? actionLabel(rateGroundTruth.action) : ''"></span>
+        <div class="truth-meta">
+          <span class="horizon-label" x-text="rateGroundTruth ? rateGroundTruth.next_fomc_date : ''"></span>
+          <span class="num" x-text="rateGroundTruth ? ((rateGroundTruth.bps > 0 ? '+' : (rateGroundTruth.bps < 0 ? '−' : '')) + Math.abs(rateGroundTruth.bps) + ' bps') : ''"></span>
+        </div>
+        <span class="verdict-badge"
+              :class="rateForecast && rateGroundTruth && rateForecast.aggregate_action === rateGroundTruth.action ? 'verdict-hit' : 'verdict-miss'"
+              x-text="rateForecast && rateGroundTruth && rateForecast.aggregate_action === rateGroundTruth.action ? '✓ HIT' : '✗ MISS'"></span>
+      </div>
+    </div>
+    <p style="margin-top: var(--s-3); font-size: 12px; color: var(--ink-3); font-style: italic;" x-text="rateGroundTruth ? rateGroundTruth.note : ''"></p>
+  </section>
+
+  <!-- ── Fed Funds 4-school cards ─────────────────────── -->
+  <section x-show="target === 'fed-funds' && rateForecast" class="schools-section">
+    <div class="eyebrow">4 学派各自的决议</div>
+    <div class="schools-grid">
+      <template x-for="v in (rateForecast ? rateForecast.verdicts : [])" :key="v.school">
+        <div class="school rate-school-card" :data-vc="v.volatility_class" :data-failed="v.failed">
+          <header class="school-head">
+            <span class="school-dot" :class="'dot-' + v.school"></span>
+            <span class="school-name" x-text="schoolName(v.school)"></span>
+            <span class="vc-pill" :class="'vc-' + v.volatility_class" x-text="vcLabel(v.volatility_class)"></span>
+          </header>
+          <template x-if="v.failed">
+            <p class="failed-note">FAILED</p>
+          </template>
+          <template x-if="!v.failed">
+            <div>
+              <div style="display: flex; align-items: baseline; gap: var(--s-3); margin: var(--s-3) 0;">
+                <span class="rate-action-mini" :class="v.action" x-text="actionLabel(v.action)"></span>
+                <span class="rate-bps" x-text="v.bps ? ((v.action === 'cut' ? '-' : '+') + v.bps + ' bps') : '0 bps'"></span>
+                <span style="margin-left: auto; font-size: 11px; color: var(--ink-4);">conf <span x-text="v.confidence ? v.confidence.toFixed(2) : '0'"></span></span>
+              </div>
+              <div class="rate-school-detail">
+                <div x-show="v.taylor_implied_anchor"><span style="color:var(--ink-4);">Taylor anchor:</span> <span class="num" x-text="v.taylor_implied_anchor ? v.taylor_implied_anchor.toFixed(2) + '%' : ''"></span></div>
+                <div x-show="v.attribution_note" style="margin-top: 4px; color: var(--ink-3); font-style: italic;" x-text="v.attribution_note"></div>
+              </div>
+              <details style="margin-top: var(--s-3); font-size: 12px;">
+                <summary style="cursor: pointer; color: var(--ink-4);">展开 reasoning</summary>
+                <p style="margin-top: var(--s-2); color: var(--ink-2); line-height: 1.55;" x-text="v.reasoning"></p>
+                <p x-show="v.top_signals && v.top_signals.length" style="margin-top: var(--s-2); color: var(--ink-4);">信号: <span class="num" x-text="(v.top_signals || []).join(' · ')"></span></p>
+              </details>
+            </div>
+          </template>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <!-- ── 通用方向 hero (XAU/yields/FX/commodity 共用) ─── -->
+  <section x-show="['xau', 'us-2y', 'us-10y', 'fx-cnh', 'fx-jpy', 'oil', 'copper'].includes(target) && forecast" class="verdict">
+    <div class="verdict-head">
+      <div class="verdict-asset">
+        预测 · <strong x-text="targetLabel(target)">XAU / USD</strong>
+        <span style="margin-left: var(--s-3); color: var(--ink-4); font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 11px;"
+              x-text="forecast ? forecast.label : ''"></span>
+      </div>
+      <span class="consensus-tag"
+            :class="forecast && forecast.is_unanimous ? 'consensus-unanimous' : (forecast && forecast.is_split ? 'consensus-split' : 'consensus-majority')"
+            x-text="forecast && forecast.is_unanimous ? '✓ 4 学派一致' : (forecast && forecast.is_split ? '⚠ 2:2 平局' : '多数票')"></span>
+    </div>
+
+    <div class="verdict-grid">
+      <template x-for="h in ['T+5', 'T+20']" :key="h">
+        <div style="display: contents;">
+          <div class="verdict-cell">
+            <span class="horizon-label" x-text="h + ' (' + (h === 'T+5' ? '5 交易日' : '20 交易日') + ')'"></span>
+            <span class="horizon-arrow"
+                  :class="forecast ? ('dir-' + forecast.horizons[h].direction) : ''"
+                  x-text="forecast ? arrow(forecast.horizons[h].direction) : '—'"
+                  data-pretext></span>
+            <div class="horizon-detail">
+              <span>投票</span>
+              <span class="vote-pill" x-text="forecast ? voteString(forecast.horizons[h].vote_counts) : ''"></span>
+            </div>
+          </div>
+          <div class="verdict-divider" x-show="h === 'T+5'"></div>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <!-- ─── Ground truth (history mode only, 适配 directional targets) ─── -->
+  <section class="truth"
+           x-show="tab === 'history' && ['xau','us-2y','us-10y','fx-cnh','fx-jpy','oil','copper'].includes(target) && forecast && forecast.ground_truth && forecast.ground_truth['T+5']">
+    <div class="truth-head">
+      <span>
+        <!-- Lucide: check-circle (验证 ground truth) -->
+        <svg class="lucide" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+        历史实际值 · ground truth
+      </span>
+    </div>
+    <div class="truth-grid">
+      <template x-for="h in ['T+5', 'T+20']" :key="h">
+        <div class="truth-cell">
+          <span class="truth-arrow"
+                :class="forecast && forecast.ground_truth[h] ? ('dir-' + forecast.ground_truth[h].dir) : 'dir-flat'"
+                x-text="forecast && forecast.ground_truth[h] ? arrow(forecast.ground_truth[h].dir) : '?'"></span>
+          <div class="truth-meta">
+            <span class="horizon-label" x-text="h + ' 实际涨跌'"></span>
+            <span class="num"
+                  x-text="forecast && forecast.ground_truth[h] ? formatPct(forecast.ground_truth[h].actual_pct) : ''"></span>
+          </div>
+          <span class="verdict-badge"
+                :class="forecast && forecast.ground_truth[h] && forecast.horizons[h].direction === forecast.ground_truth[h].dir ? 'verdict-hit' : 'verdict-miss'"
+                x-text="forecast && forecast.ground_truth[h] && forecast.horizons[h].direction === forecast.ground_truth[h].dir ? '✓ HIT' : '✗ MISS'"></span>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <!-- ─── 4-school verdicts ───────────────────────────── -->
+  <section x-show="forecast" class="schools-section">
+    <div class="eyebrow">4 学派各自的判断</div>
+    <div class="schools-grid">
+      <template x-for="v in (forecast ? forecast.verdicts : [])" :key="v.school">
+        <div class="school" :data-vc="v.volatility_class" :data-failed="v.failed">
+          <header class="school-head">
+            <span class="school-dot" :class="'dot-' + v.school"></span>
+            <span class="school-name" x-text="schoolName(v.school)"></span>
+            <span class="vc-pill" :class="'vc-' + v.volatility_class" x-text="vcLabel(v.volatility_class)"></span>
+          </header>
+
+          <template x-if="v.failed">
+            <p class="failed-note">FAILED · 推理失败 (anti-hallucination guard tripped)</p>
+          </template>
+
+          <template x-if="!v.failed">
+            <div style="display: flex; flex-direction: column; gap: var(--s-3);">
+              <div class="school-horizons">
+                <template x-for="h in ['T+5', 'T+20']" :key="h">
+                  <div>
+                    <div class="s-horizon-label" x-text="h"></div>
+                    <div class="s-horizon-arrow"
+                         :class="'dir-' + v.verdict[h].dir"
+                         x-text="arrow(v.verdict[h].dir)" data-pretext></div>
+                    <div class="s-horizon-range num"
+                         x-text="'[' + v.verdict[h].range_pct[0] + ', ' + v.verdict[h].range_pct[1] + ']%'"></div>
+                  </div>
+                </template>
+              </div>
+
+              <p class="school-attr" x-show="v.attribution_note" x-text="v.attribution_note" data-pretext></p>
+
+              <div class="honesty">
+                <span style="font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase;">CONF</span>
+                <div class="conf-bar"><div class="conf-fill" :style="'width:' + ((v.confidence || 0) * 100) + '%'"></div></div>
+                <span class="conf-num" x-text="(v.confidence != null ? v.confidence.toFixed(2) : '—')"></span>
+              </div>
+
+              <details class="school-reasoning">
+                <summary>推理依据</summary>
+                <div class="reasoning-body">
+                  <div class="signals" x-show="v.top_signals && v.top_signals.length">
+                    <span class="lbl">关键信号</span>
+                    <span class="num" x-text="(v.top_signals || []).join(' · ')"></span>
+                  </div>
+                  <div class="precedents" x-show="v.historical_precedents && v.historical_precedents.length">
+                    <span class="lbl">历史先例</span>
+                    <span x-text="(v.historical_precedents || []).join(' · ')"></span>
+                  </div>
+                  <p class="reasoning-prose" contenteditable="true" x-text="v.reasoning" data-pretext></p>
+                </div>
+              </details>
+            </div>
+          </template>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <!-- ─── Event modulation panel ──────────────────────── -->
+  <section x-show="modulation" class="modulation">
+    <div class="mod-head">
+      <span class="eyebrow">
+        <!-- Lucide: zap (outline 闪电) -->
+        <svg class="lucide" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        事件修正
+      </span>
+      <span style="font-size: var(--t-meta); color: var(--amber); margin-left: auto;">delta on baseline</span>
+    </div>
+    <p class="mod-event-text" x-text="modulation ? modulation.event_text : ''" data-pretext></p>
+
+    <div class="mod-aggregate">
+      <template x-for="h in ['T+5', 'T+20']" :key="h">
+        <div style="display: contents;">
+          <div class="mod-cell">
+            <span class="horizon-label" x-text="h + ' 合计 delta'"></span>
+            <span class="mod-delta-num"
+                  :class="modulation && modulation.modulation.aggregate_delta[h] > 0 ? 'dir-up' : (modulation && modulation.modulation.aggregate_delta[h] < 0 ? 'dir-down' : 'dir-flat')"
+                  x-text="formatDelta(modulation && modulation.modulation.aggregate_delta[h])"></span>
+          </div>
+          <div class="verdict-divider" x-show="h === 'T+5'"></div>
+        </div>
+      </template>
+    </div>
+
+    <div class="structural-warn"
+         x-show="modulation && modulation.modulation.structural_change_votes >= 3">
+      ⚠ 4/4 学派认为这是"结构性变化" — 建议更新结构状态库 (state.json + ADR)
+    </div>
+
+    <div class="mod-school-grid">
+      <template x-for="d in (modulation ? modulation.modulation.deltas : [])" :key="d.school">
+        <div class="mod-school" :data-failed="d.failed">
+          <div class="mod-school-head">
+            <span class="school-dot" :class="'dot-' + d.school"></span>
+            <span class="mod-school-name" x-text="schoolName(d.school)"></span>
+            <span class="vc-pill" :class="'vc-' + d.event_volatility_class" x-text="vcLabel(d.event_volatility_class)"
+                  x-show="d.event_volatility_class"></span>
+          </div>
+          <template x-if="d.failed">
+            <span class="failed-note">FAILED</span>
+          </template>
+          <template x-if="!d.failed">
+            <div class="mod-school-row">
+              <template x-for="h in ['T+5', 'T+20']" :key="h">
+                <div class="mod-school-h">
+                  <div class="s-horizon-label" x-text="h"></div>
+                  <div class="num"
+                       :class="d.delta[h].adjust_pct > 0 ? 'dir-up' : (d.delta[h].adjust_pct < 0 ? 'dir-down' : 'dir-flat')"
+                       x-text="formatDelta(d.delta[h].adjust_pct)"></div>
+                  <div class="reason" x-text="d.delta[h].reason" data-pretext></div>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <!-- ─── Empty state when nothing selected ────────────── -->
+  <div class="empty"
+       x-show="!forecast && !modulation && ((tab === 'history' && !selected) || (tab === 'realtime' && !realtimeState))">
+    <strong x-text="tab === 'history' ? '从上面 8 个历史时点挑一个' : '加载实时数据中…'"></strong>
+    <span x-text="tab === 'history' ? '点击年份卡片即可调取当时的 15 个结构变量。' : ''"></span>
+  </div>
+
+  <!-- ─── Footer (always visible, ADR-002 disclaimer) ── -->
+  <footer class="footer">
+    <span class="disclaim">不是投资建议 · Not investment advice · ADR-002 anti-hallucination protocol enforced</span>
+    <span class="footer-meta">
+      Hindcast 鉴往 v0.5 · <a href="/docs">API docs</a> · <a href="https://github.com">source</a>
+    </span>
+  </footer>
+</div>
+
+<!-- ── Pretext-native height computation (Tier 1) ───────── -->
+<script type="module">
+  import { prepare, layout } from './pretext.js';
+
+  // Pretext is opt-in per element via [data-pretext].
+  // For Hindcast, we use it on:
+  //   - hero arrows (oversized chars need correct line-height boxes)
+  //   - school reasoning prose (contenteditable, must reflow)
+  //   - event modulation explanations
+  //   - school attribution notes
+  const prepared = new Map();
+
+  async function preparePretext() {
+    await document.fonts.ready;
+    const els = document.querySelectorAll('[data-pretext]');
+    for (const el of els) {
+      const text = el.textContent || '';
+      if (!text.trim()) continue;
+      const font = getComputedStyle(el).font || '15px system-ui';
+      try {
+        prepared.set(el, { handle: prepare(text, font), font });
+      } catch (e) {
+        // Pretext might fail on certain glyphs; skip — element renders normally.
+        console.debug('pretext.prepare skip', e);
+      }
+    }
+    relayout();
+  }
+
+  function relayout() {
+    for (const [el, { handle }] of prepared) {
+      const w = el.clientWidth;
+      if (w <= 0) continue;
+      const lh = parseFloat(getComputedStyle(el).lineHeight);
+      const lineHeight = isNaN(lh) ? 22 : lh;
+      try {
+        const { height } = layout(handle, w, lineHeight);
+        if (height > 0) el.style.minHeight = `${height}px`;
+      } catch (e) {
+        // ignore
+      }
+    }
+  }
+
+  // ResizeObserver on body — re-layout when viewport changes
+  new ResizeObserver(relayout).observe(document.body);
+
+  // MutationObserver on contenteditable reasoning — re-prepare when user edits
+  function attachEditObservers() {
+    for (const el of document.querySelectorAll('[contenteditable="true"][data-pretext]')) {
+      new MutationObserver(() => {
+        const text = el.textContent || '';
+        const font = getComputedStyle(el).font;
+        if (text.trim()) {
+          try {
+            prepared.set(el, { handle: prepare(text, font), font });
+            relayout();
+          } catch (e) {}
+        }
+      }).observe(el, { characterData: true, subtree: true, childList: true });
+    }
+  }
+
+  // Re-prepare whenever forecast/modulation data arrives (Alpine re-renders DOM)
+  let prepareTimer = null;
+  function deferredPrepare() {
+    clearTimeout(prepareTimer);
+    prepareTimer = setTimeout(() => {
+      prepared.clear();
+      preparePretext().then(attachEditObservers);
+    }, 50);
+  }
+  // MutationObserver on whole shell catches Alpine x-show / template renders
+  new MutationObserver(deferredPrepare).observe(document.querySelector('.shell'), {
+    childList: true, subtree: true, characterData: true
+  });
+
+  // initial
+  preparePretext().then(attachEditObservers);
+</script>
+
+<!-- ── App logic (Alpine) ────────────────────────────────── -->
+<script>
+function hindcast() {
+  return {
+    tab: 'history',
+    target: 'us-2y',                // 默认开始 = 最强因果 (94%)
+    predictedTargets: [],           // 用户预测过的 targets
+    tiersCompleted: { strong: false, derived: false, hard: false },
+    progressBanner: null,           // {icon, title, sub, action, actionLabel}
+    targetToTier: {
+      'us-2y':     'strong',
+      'fed-funds': 'strong',
+      'fx-cnh':    'derived',     // 移到 Tier 02 (政策锚定 ≠ 真强因果)
+      'us-10y':    'derived',
+      'oil':       'derived',
+      'fx-jpy':    'derived',
+      'copper':    'derived',
+      'tips':      'derived',
+      'bei':       'derived',
+      'dxy':       'derived',
+      'xau':       'hard',
+    },
+    bridgePriors: {},               // tips/bei/dxy 预测后的 verdict 存这里, XAU 时 inject
+    snapshots: [],
+    selected: null,
+    state: null,
+    running: false,
+    mode: null,
+    forecast: null,
+    rateForecast: null,             // Fed funds 预测结果
+    rateGroundTruth: null,          // FOMC 实际决议
+    modulation: null,
+    realtimeState: null,
+    realtimeValues: {},
+    eventText: '',
+
+    rateGroundTruthDB: {
+      "1971-08-12": { next_fomc_date: "1971-09-21", action: "cut",  bps: 25,  note: "Burns Fed 在尼克松政治压力下继续宽松" },
+      "1973-10-05": { next_fomc_date: "1973-10-16", action: "hike", bps: 50,  note: "石油危机后 Burns 加速紧缩" },
+      "1979-10-05": { next_fomc_date: "1979-10-06", action: "hike", bps: 100, note: "Volcker 周末紧急会议宣布新货币操作框架" },
+      "1992-09-15": { next_fomc_date: "1992-10-06", action: "hold", bps: 0,   note: "Greenspan 在 ERM 危机期间维持 3% 不变" },
+      "2008-09-14": { next_fomc_date: "2008-10-08", action: "cut",  bps: 50,  note: "雷曼后协调降息 10/8（与 BOE/BOJ/ECB 联合）" },
+      "2018-03-21": { next_fomc_date: "2018-03-21", action: "hike", bps: 25,  note: "Powell 主持的第一次 FOMC：+25 bps" },
+      "2020-02-28": { next_fomc_date: "2020-03-03", action: "cut",  bps: 50,  note: "COVID 紧急降息 50bps；3/15 再 -100bps" },
+      "2022-02-23": { next_fomc_date: "2022-03-16", action: "hike", bps: 25,  note: "加息周期启动：首次 +25 bps" },
+    },
+
+    schoolLabels: {
+      austrian:              '奥地利学派',
+      monetarist:            '货币主义',
+      keynesian:             '凯恩斯主义',
+      rational_expectations: '理性预期',
+    },
+
+    async init() { await this.loadSnapshots(); },
+
+    async loadSnapshots() {
+      try {
+        const r = await fetch('/api/snapshots');
+        this.snapshots = (await r.json()).filter(s => s.as_of !== '2026-05-14');
+      } catch (e) {
+        // Static-preview fallback so this HTML opens via file:// without the API
+        this.snapshots = [
+          { as_of: '1971-08-15', label: 'Nixon Shock',        event: '美国关闭金兑换窗口，布雷顿森林瓦解' },
+          { as_of: '1973-10-17', label: 'Oil Embargo',        event: 'OPEC 石油禁运，黄金/油价齐飞' },
+          { as_of: '1979-10-06', label: 'Volcker Tightening', event: '沃尔克货币紧缩，金价 22 月翻倍后崩塌' },
+          { as_of: '1992-09-16', label: 'Black Wednesday',    event: '索罗斯做空英镑，ERM 体系破裂' },
+          { as_of: '2008-09-15', label: 'Lehman',             event: '雷曼破产，全球流动性危机' },
+          { as_of: '2018-07-06', label: 'Trade War',          event: '美对华 340 亿关税生效，贸易摩擦升级' },
+          { as_of: '2020-03-23', label: 'COVID Crash',        event: 'Fed 无限 QE，全球资产先崩后涨' },
+          { as_of: '2022-02-24', label: 'Russia / SWIFT',     event: '俄入侵乌克兰，俄罗斯被踢出 SWIFT' },
+        ];
+      }
+    },
+
+    async loadToday() {
+      try {
+        const r = await fetch('/api/today');
+        this.realtimeState = await r.json();
+      } catch {
+        // demo fallback
+        this.realtimeState = {
+          variables: [
+            { id: 'V1',  name: 'DXY 美元指数',         value: 104.32 },
+            { id: 'V2',  name: 'US 10Y 实际利率',      value: 2.18 },
+            { id: 'V3',  name: 'TIPS spread',         value: 2.34 },
+            { id: 'V4',  name: 'M2 同比',             value: 0.041 },
+            { id: 'V5',  name: 'Fed funds rate',      value: 4.5 },
+            { id: 'V6',  name: 'GPR index',           value: 156 },
+            { id: 'V7',  name: 'VIX',                 value: 18.4 },
+            { id: 'V8',  name: 'SDN 制裁规模',         value: 234 },
+            { id: 'V9',  name: '央行黄金净购买',       value: 89 },
+            { id: 'V10', name: 'ETF 持仓 (吨)',       value: 2841 },
+            { id: 'V11', name: '远期升水 (1Y)',       value: 0.038 },
+            { id: 'V12', name: 'Stress index',       value: 0.45 },
+            { id: 'V13', name: 'USD share (SWIFT)',  value: 0.586 },
+            { id: 'V14', name: 'CNY DXY weight',     value: 0.012 },
+            { id: 'V15', name: '关键事件窗 (30d)',    value: 4 },
+          ]
+        };
+      }
+      this.realtimeValues = {};
+      this.realtimeState.variables.forEach(v => this.realtimeValues[v.id] = v.value);
+    },
+
+    switchTab(t) {
+      this.tab = t;
+      this.forecast = null;
+      this.rateForecast = null;
+      this.modulation = null;
+      if (t === 'realtime' && !this.realtimeState) this.loadToday();
+    },
+
+    switchTarget(t) {
+      this.target = t;
+      this.forecast = null;
+      this.rateForecast = null;
+      this.rateGroundTruth = null;
+      this.progressBanner = null;
+    },
+
+    markPredictionComplete() {
+      // 当一次成功预测后调用，记录 + 解锁下一档
+      if (!this.predictedTargets.includes(this.target)) {
+        this.predictedTargets.push(this.target);
+      }
+      const tier = this.targetToTier[this.target];
+      const tiers = this.tiersCompleted;
+
+      // 解锁下一档 + 显示推荐 banner
+      if (tier === 'strong' && !tiers.strong) {
+        tiers.strong = true;
+        this.progressBanner = {
+          title: 'Tier 01 已掌握 — Tier 02 已解锁',
+          sub: '推荐挑战 US 10Y · 长端 = 短端 + 通胀预期 + 期限溢价。看派生指标如何建立在强因果之上。',
+          action: 'us-10y',
+          actionLabel: '试 US 10Y →',
+        };
+      } else if (tier === 'derived' && !tiers.derived) {
+        tiers.derived = true;
+        this.progressBanner = {
+          title: 'Tier 02 已掌握 — Tier 03 已解锁',
+          sub: '黄金是终极挑战 · 法币信用 + GPR + 实际利率 + 央行购金 + BTC 相关。5 维交织, 学派分歧最大。',
+          action: 'xau',
+          actionLabel: '挑战 XAU →',
+        };
+      } else if (tier === 'hard' && !tiers.hard) {
+        tiers.hard = true;
+        this.progressBanner = {
+          title: 'Tier 03 完成 — 9 个 target 全跑通',
+          sub: 'XAU 多维叙事预测完成。你已通过 hindcast 的完整方法论分级 (强因果 → 派生 → 多维)。',
+          action: null,
+          actionLabel: '',
+        };
+      }
+    },
+
+    async selectSnapshot(snap) {
+      this.selected = snap;
+      this.forecast = null;
+      this.rateForecast = null;
+      this.rateGroundTruth = this.rateGroundTruthDB[snap.as_of] || null;
+      this.modulation = null;
+      try {
+        const r = await fetch(`/api/state/${snap.as_of}`);
+        this.state = await r.json();
+      } catch {
+        // demo fallback — mirror today shape with arbitrary numbers
+        this.state = {
+          variables: [
+            { id: 'V1', name: 'DXY',                value: 120.4 },
+            { id: 'V2', name: 'US 10Y 实际利率',     value: -1.2 },
+            { id: 'V3', name: 'M2 同比',           value: 0.13 },
+            { id: 'V4', name: 'Fed funds',         value: 5.75 },
+            { id: 'V5', name: 'GPR index',         value: 245 },
+            { id: 'V6', name: 'USD share (SWIFT)', value: 0.71 },
+            { id: 'V7', name: '央行黄金净购买',     value: -45 },
+          ]
+        };
+      }
+    },
+
+    async runPredict(modeName) {
+      this.running = true;
+      this.mode = modeName;
+      this.forecast = null;
+      this.rateForecast = null;
+      this.modulation = null;
+
+      // Dispatch by target
+      if (this.target === 'fed-funds') {
+        return this.runRatePredict(modeName);
+      }
+      if (this.target === 'us-2y' || this.target === 'us-10y') {
+        return this.runYieldPredict(modeName);
+      }
+      if (this.target === 'fx-cnh' || this.target === 'fx-jpy') {
+        return this.runFXPredict(modeName);
+      }
+      if (this.target === 'oil' || this.target === 'copper') {
+        return this.runCommodityPredict(modeName);
+      }
+      if (this.target === 'tips' || this.target === 'bei' || this.target === 'dxy') {
+        return this.runBridgePredict(modeName);
+      }
+
+      try {
+        let r;
+        // XAU 时把 bridgePriors 注入到 backend
+        const priorsBody = (this.target === 'xau' && Object.keys(this.bridgePriors).length > 0)
+          ? { bridge_priors: this.bridgePriors } : null;
+        if (modeName === 'history') {
+          r = await fetch(`/api/predict/${this.selected.as_of}`, {
+            method: 'POST',
+            headers: priorsBody ? { 'Content-Type': 'application/json' } : {},
+            body: priorsBody ? JSON.stringify(priorsBody) : null,
+          });
+        } else {
+          r = await fetch('/api/predict-custom', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ as_of: '2026-05-14', label: '实时预测', values: this.realtimeValues }),
+          });
+        }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        this.forecast = await r.json();
+        this.markPredictionComplete();
+      } catch (e) {
+        this.forecast = this.demoForecast(modeName);
+      } finally {
+        this.running = false;
+        this.mode = null;
+      }
+    },
+
+    async runRatePredict(modeName) {
+      try {
+        let r;
+        if (modeName === 'history') {
+          r = await fetch(`/api/predict-rate/${this.selected.as_of}`, { method: 'POST' });
+        } else {
+          // For realtime, the macro data isn't editable in current UI — call rate-custom with default today macro
+          alert("实时 Fed funds 预测：当前 UI 还没接入 macro 数据可编辑，先用历史模式 demo");
+          this.running = false; this.mode = null;
+          return;
+        }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        this.rateForecast = await r.json();
+        this.markPredictionComplete();
+      } catch (e) {
+        alert("Fed funds 预测失败: " + e.message);
+      } finally {
+        this.running = false;
+        this.mode = null;
+      }
+    },
+
+    actionLabel(a) {
+      return ({ hike: 'HIKE', cut: 'CUT', hold: 'HOLD', NO_SIGNAL: 'NO SIGNAL' })[a] || a;
+    },
+
+    targetLabel(t) {
+      return ({
+        'xau': 'XAU / USD', 'fed-funds': 'Fed Funds Rate',
+        'us-2y': 'US 2Y Yield', 'us-10y': 'US 10Y Yield',
+        'fx-cnh': 'USD / CNH', 'fx-jpy': 'USD / JPY',
+        'oil': 'WTI 原油', 'copper': 'LME 铜',
+        'tips': 'US 10Y TIPS (实际利率)',
+        'bei': '10Y BEI (通胀预期)',
+        'dxy': 'DXY (美元综合指数)',
+      })[t] || t;
+    },
+
+    async runBridgePredict(modeName) {
+      const tgt = { 'tips': 'US_10Y_TIPS', 'bei': 'US_10Y_BEI', 'dxy': 'DXY' }[this.target];
+      try {
+        let r;
+        if (modeName === 'history') {
+          r = await fetch(`/api/predict-bridge/${this.selected.as_of}?target=${tgt}`, { method: 'POST' });
+        } else {
+          alert("实时桥梁变量预测：先用历史模式 demo");
+          this.running = false; this.mode = null; return;
+        }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        this.forecast = this._normalizeForecast(data);
+        // 记录到 bridgePriors 供 XAU 预测时 inject
+        this.bridgePriors[this.target] = {
+          as_of: this.selected.as_of,
+          t5: data.horizons['T+5'].direction,
+          t20: data.horizons['T+20'].direction,
+          label: this.targetLabel(this.target),
+        };
+        this.markPredictionComplete();
+      } catch (e) {
+        alert("桥梁变量预测失败: " + e.message);
+      } finally {
+        this.running = false; this.mode = null;
+      }
+    },
+
+    async runFXPredict(modeName) {
+      const tgt = this.target === 'fx-cnh' ? 'USD/CNH' : 'USD/JPY';
+      try {
+        let r;
+        if (modeName === 'history') {
+          r = await fetch(`/api/predict-fx/${this.selected.as_of}?target=${encodeURIComponent(tgt)}`, { method: 'POST' });
+        } else {
+          alert("实时 FX 预测：先用历史模式 demo");
+          this.running = false; this.mode = null; return;
+        }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        this.forecast = this._normalizeForecast(data);
+        this.markPredictionComplete();
+      } catch (e) {
+        alert("FX 预测失败: " + e.message);
+      } finally {
+        this.running = false; this.mode = null;
+      }
+    },
+
+    async runCommodityPredict(modeName) {
+      const tgt = this.target === 'oil' ? 'CRUDE_OIL' : 'COPPER';
+      try {
+        let r;
+        if (modeName === 'history') {
+          r = await fetch(`/api/predict-commodity/${this.selected.as_of}?target=${tgt}`, { method: 'POST' });
+        } else {
+          alert("实时商品预测：先用历史模式 demo");
+          this.running = false; this.mode = null; return;
+        }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        this.forecast = this._normalizeForecast(data);
+        this.markPredictionComplete();
+      } catch (e) {
+        alert("商品预测失败: " + e.message);
+      } finally {
+        this.running = false; this.mode = null;
+      }
+    },
+
+    _normalizeForecast(data) {
+      // 把 fx/commodity 响应 normalize 成 XAU forecast 形态
+      return {
+        as_of: data.as_of, label: data.label, asset: data.target,
+        is_unanimous: data.is_unanimous, is_split: false,
+        horizons: data.horizons,
+        verdicts: data.verdicts,
+        ground_truth: data.ground_truth ? {
+          "T+5": data.ground_truth["T+5"],
+          "T+20": data.ground_truth["T+20"],
+        } : null,
+      };
+    },
+
+    async runYieldPredict(modeName) {
+      const tgt = this.target === 'us-2y' ? 'US_2Y' : 'US_10Y';
+      try {
+        let r;
+        if (modeName === 'history') {
+          r = await fetch(`/api/predict-yield/${this.selected.as_of}?target=${tgt}`, { method: 'POST' });
+        } else {
+          alert("实时 yield 预测：先用历史模式 demo");
+          this.running = false; this.mode = null; return;
+        }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        this.markPredictionComplete();
+        // Normalize yield response to match XAU forecast shape so existing UI reuses
+        this.forecast = {
+          as_of: data.as_of, label: data.label, asset: data.target,
+          is_unanimous: data.is_unanimous, is_split: data.is_split,
+          horizons: data.horizons,
+          verdicts: data.verdicts.map(v => ({
+            ...v,
+            verdict: {
+              "T+5":  { dir: v.verdict["T+5"].dir,  range_pct: v.verdict["T+5"].range_bps },
+              "T+20": { dir: v.verdict["T+20"].dir, range_pct: v.verdict["T+20"].range_bps },
+            },
+            historical_precedents: v.yield_curve_signal ? [v.yield_curve_signal] : [],
+          })),
+          ground_truth: data.ground_truth ? {
+            "T+5": data.ground_truth["T+5"] && { dir: data.ground_truth["T+5"].dir, actual_pct: data.ground_truth["T+5"].actual_bps },
+            "T+20": data.ground_truth["T+20"] && { dir: data.ground_truth["T+20"].dir, actual_pct: data.ground_truth["T+20"].actual_bps },
+          } : null,
+        };
+      } catch (e) {
+        alert("Yield 预测失败: " + e.message);
+      } finally {
+        this.running = false;
+        this.mode = null;
+      }
+    },
+
+    async runEventModulation() {
+      if (!this.eventText.trim()) return;
+      this.running = true;
+      this.mode = 'event';
+      this.forecast = null;
+      this.modulation = null;
+      try {
+        const r = await fetch('/api/predict-with-event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            as_of: '2026-05-14', label: '实时预测 + 事件',
+            values: this.realtimeValues, event_text: this.eventText,
+          }),
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        this.forecast = {
+          as_of: data.as_of, label: '常态 baseline', asset: 'XAU/USD',
+          is_unanimous: false, is_split: false,
+          horizons: data.baseline.horizons, verdicts: data.baseline.verdicts,
+        };
+        this.modulation = data;
+      } catch (e) {
+        const demo = this.demoModulation(this.eventText);
+        this.forecast = demo.forecast;
+        this.modulation = demo.modulation;
+      } finally {
+        this.running = false;
+        this.mode = null;
+      }
+    },
+
+    /* ─── demo data (only fires when API is offline) ─── */
+    demoForecast(modeName) {
+      const isHistory = modeName === 'history';
+      return {
+        as_of: isHistory && this.selected ? this.selected.as_of : '2026-05-14',
+        label: isHistory && this.selected ? this.selected.label : '实时预测',
+        asset: 'XAU/USD',
+        horizons: {
+          'T+5':  { direction: 'up', vote_counts: { up: 3, down: 1, flat: 0 } },
+          'T+20': { direction: 'up', vote_counts: { up: 4, down: 0, flat: 0 } },
+        },
+        is_unanimous: false, is_split: false,
+        verdicts: [
+          { school: 'austrian', volatility_class: 'exogenous_shock', confidence: 0.78,
+            attribution_note: '法币信用累积裂痕，结构变量 V13 (USD share) 跌至阈值。',
+            verdict: { 'T+5': { dir: 'up', range_pct: [1.2, 3.8] }, 'T+20': { dir: 'up', range_pct: [4.5, 11.2] } },
+            top_signals: ['V13↓', 'V9↑'], historical_precedents: ['1971', '1979'],
+            reasoning: '从奥派视角，央行长期 M2 扩张已经透支了法币的购买力承诺。短期内市场尚未完全 price-in，但当 V13 (USD 在 SWIFT 中的份额) 跌破 60% 门槛时，逻辑驱动型的逃离美元 → 黄金 链条会启动。' },
+          { school: 'monetarist', volatility_class: 'endogenous_technical', confidence: 0.62,
+            attribution_note: '货币供给增速 + 实际利率组合属于历史中性区间。',
+            verdict: { 'T+5': { dir: 'flat', range_pct: [-0.8, 1.0] }, 'T+20': { dir: 'up', range_pct: [1.2, 4.0] } },
+            top_signals: ['V4', 'V2'], historical_precedents: [],
+            reasoning: '弗里德曼意义上的"通胀永远是货币现象"。当前 M2 同比 4.1% 与实际利率 2.18% 的组合处于历史中性区间，T+5 没有方向性信号；T+20 上涨更多来自市场对 Fed 降息预期的提前 price-in。' },
+          { school: 'keynesian', volatility_class: 'stochastic_noise', confidence: 0.34,
+            attribution_note: '近 5 日波动属于市场噪声，无明确财政/产出推动。',
+            verdict: { 'T+5': { dir: 'flat', range_pct: [-1.5, 1.5] }, 'T+20': { dir: 'up', range_pct: [0.5, 3.0] } },
+            top_signals: [], historical_precedents: [],
+            reasoning: '凯恩斯主义关注总需求和政府支出。当前没有重大财政政策变化或失业率信号，黄金的短期波动主要是市场情绪和技术性博弈 (stochastic_noise)，模型置信度刻意压低。' },
+          { school: 'rational_expectations', volatility_class: 'exogenous_shock', confidence: 0.71,
+            attribution_note: '所有公开信息已被 price-in，唯一剩余 alpha 来自非对称信息和未公开 BoJ/PBoC 行动。',
+            verdict: { 'T+5': { dir: 'up', range_pct: [0.8, 2.5] }, 'T+20': { dir: 'up', range_pct: [3.0, 8.0] } },
+            top_signals: ['V14↑', '事件窗=4'], historical_precedents: ['2022'],
+            reasoning: 'Lucas 等人的理性预期框架下，公开宏观变量已经被市场 price-in，T+5/T+20 的方向性信号必须来自非对称信息。当前 V14 (CNY 在 DXY 篮子的潜在权重) 与未公开的 BoJ/PBoC 黄金购买行动构成了主要的 unpriced 因子。' },
+        ],
+        ground_truth: isHistory ? {
+          'T+5':  { dir: 'up',   actual_pct:  2.4 },
+          'T+20': { dir: 'down', actual_pct: -3.1 },
+        } : null,
+      };
+    },
+    demoModulation(text) {
+      const f = this.demoForecast('custom');
+      f.label = '常态 baseline';
+      return {
+        forecast: f,
+        modulation: {
+          event_text: text,
+          modulation: {
+            aggregate_delta: { 'T+5': 1.85, 'T+20': 3.20 },
+            structural_change_votes: 2,
+            deltas: [
+              { school: 'austrian', event_volatility_class: 'exogenous_shock',
+                delta: { 'T+5': { adjust_pct:  2.5, reason: '法币信用直接受冲击，逃离美元路径加速。' },
+                         'T+20': { adjust_pct: 5.0, reason: '中期 trend 由温和上行 → 显著上行。' } } },
+              { school: 'monetarist', event_volatility_class: 'endogenous_technical',
+                delta: { 'T+5': { adjust_pct:  1.0, reason: '货币流动性预期短期上调。' },
+                         'T+20': { adjust_pct: 2.0, reason: '若 Fed 反应函数变化则中期通胀预期上修。' } } },
+              { school: 'keynesian', event_volatility_class: 'stochastic_noise',
+                delta: { 'T+5': { adjust_pct: 0.5, reason: '总需求与财政路径未变，事件对宏观传导有限。' },
+                         'T+20': { adjust_pct: 1.0, reason: '若引发财政响应才会显著影响 T+20。' } } },
+              { school: 'rational_expectations', event_volatility_class: 'exogenous_shock',
+                delta: { 'T+5': { adjust_pct: 3.4, reason: '事件本身就是 non-public information shock。' },
+                         'T+20': { adjust_pct: 4.8, reason: '若结构性 (V13 永久下移)，中期路径整体上移。' } } },
+            ],
+          },
+        },
+      };
+    },
+
+    /* ─── pure formatters ─── */
+    schoolName(s) { return this.schoolLabels[s] || s; },
+    arrow(d) { return ({ up: '↑', down: '↓', flat: '→', NO_SIGNAL: '?' })[d] || '—'; },
+    vcLabel(c) {
+      return ({
+        exogenous_shock:      '逻辑驱动',
+        endogenous_technical: '技术性',
+        stochastic_noise:     '噪声',
+        structural_break:     '结构断裂',
+      })[c] || c;
+    },
+    voteString(vc) {
+      if (!vc) return '';
+      return ['up','down','flat'].filter(k => (vc[k] || 0) > 0)
+        .map(k => `${k}:${vc[k]}`).join(' ');
+    },
+    formatValue(v) {
+      if (v === null || v === undefined) return 'N/A';
+      if (typeof v !== 'number') return String(v);
+      if (Math.abs(v) < 0.01) return v.toFixed(4);
+      if (Math.abs(v) < 1)    return v.toFixed(3);
+      return v.toFixed(2);
+    },
+    formatPct(p) {
+      if (p === null || p === undefined) return '—';
+      const sign = p > 0 ? '+' : '';
+      return `${sign}${p.toFixed(2)}%`;
+    },
+    formatDelta(p) {
+      if (p === null || p === undefined) return '—';
+      const sign = p > 0 ? '+' : '';
+      return `${sign}${p.toFixed(2)}%`;
+    },
+  };
+}
+</script>
+</body>
+</html>

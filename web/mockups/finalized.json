@@ -1,0 +1,59 @@
+{
+  "source_mockup": null,
+  "source_plan": null,
+  "mode": "freeform",
+  "fallback_chain": [
+    "DESIGN_NOT_AVAILABLE (no $D binary on disk)",
+    "BROWSE_NOT_AVAILABLE (no $B binary on disk)",
+    "DESIGN_SKETCH mode per SKILL.md line 713-715"
+  ],
+  "html_file": "/Users/a26976/Desktop/Hindcast-鉴往/hindcast/web/index-v2.html",
+  "variant_files": [
+    "/Users/a26976/Desktop/Hindcast-鉴往/hindcast/web/index-v2.html (A · billboard, production candidate)",
+    "/Users/a26976/Desktop/Hindcast-鉴往/hindcast/web/mockups/variant-b-datasheet.html (B · datasheet, layout sketch)"
+  ],
+  "comparison_board": "/Users/a26976/Desktop/Hindcast-鉴往/hindcast/web/mockups/compare.html",
+  "pretext_tier": "Tier 1 — prepare() + layout() · resize-aware heights for hero arrows, school reasoning prose (contenteditable), and event modulation explanations",
+  "pretext_vendor": "/Users/a26976/Desktop/Hindcast-鉴往/hindcast/web/pretext.js (copied from ~/TeamBrain/.claude/skills/design-html/vendor/pretext.js, 30602 bytes)",
+  "framework": "vanilla",
+  "iterations": 0,
+  "date": "2026-05-14",
+  "screen": "hindcast-app",
+  "branch": "unknown (non-git project)",
+  "design_tokens": {
+    "primary": "#0f172a",
+    "accent_realtime": "#d97706",
+    "up_gold": "#dc2626",
+    "down_gold": "#16a34a",
+    "schools": {
+      "austrian": "#d97706",
+      "monetarist": "#2563eb",
+      "keynesian": "#059669",
+      "rational_expectations": "#7c3aed"
+    },
+    "volatility_classes": {
+      "exogenous_shock": { "bg": "#dcfce7", "fg": "#166534" },
+      "endogenous_technical": { "bg": "#ffedd5", "fg": "#9a3412" },
+      "stochastic_noise": { "bg": "#f1f5f9", "fg": "#64748b" },
+      "structural_break": { "bg": "#fee2e2", "fg": "#991b1b" }
+    },
+    "fonts": "system stack: -apple-system, BlinkMacSystemFont, PingFang SC, Helvetica Neue",
+    "type_scale": ["t-hero clamp(2.75rem,6vw,4rem)", "t-h1 1.5rem", "t-h2 1.0625rem", "t-body 0.9375rem", "t-meta 0.75rem"],
+    "spacing_scale_8pt": [4, 8, 12, 16, 20, 24, 32, 40, 48]
+  },
+  "adr_002_compliance": {
+    "confidence_visible":        "✓ horizontal CONF bar in every school card (--ink fill on --line-2 track)",
+    "volatility_pills_visible":  "✓ vc-pill in school card header (4 distinct color tokens)",
+    "stochastic_noise_degrade":  "✓ school[data-vc=stochastic_noise] gets opacity:0.55 + grayscale(0.5); hover restores",
+    "structural_break_emphasis": "✓ school[data-vc=structural_break] gets red inset border + soft red bg",
+    "ground_truth_hit_miss":     "✓ truth-row with verdict-badge .b-hit / .b-miss at equal visual weight to predictions",
+    "no_investment_advice":      "✓ permanent footer slab .footer .disclaim — bilingual, references ADR-002",
+    "no_growth_halo_styling":    "✓ no purple/blue gradients, no rounded-shadow card spam, no decorative blobs"
+  },
+  "skipped_steps": [
+    "Step 0 preamble (telemetry, brain sync, learnings, lake intro, routing — gstack-specific)",
+    "Step 1 vision-based analysis ($D prompt --image) — DESIGN_NOT_AVAILABLE",
+    "Step 4 verification screenshots ($B screenshot) — BROWSE_NOT_AVAILABLE",
+    "Step 5 DESIGN.md extraction prompt — token table embedded in this finalized.json instead"
+  ]
+}

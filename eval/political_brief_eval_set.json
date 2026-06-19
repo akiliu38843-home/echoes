@@ -1,0 +1,812 @@
+{
+  "schema_version": "1.1.0",
+  "release_date": "2026-05-21",
+  "changelog": {
+    "1.1.0": "canon_anchors 每条加 concept_en 英文字段 — RAG 索引为英文, 中文 concept 的 Jaccard 算分等于零 (见 RAG_TO_HINDCAST_REPLY_2026-05-21_CANON_RECALL_REPORT_V1.md §0)",
+    "1.0.0": "首版, 8 anchor × 4 canon + blocklist + scoring_notes"
+  },
+  "purpose": "制度政治经济学派 (institutional_pe) RAG 召回质量评测集; 评测两接口 retrieve_political_events + retrieve_political_canon 的召回完整性、fabrication 抗性、vintage 合规性.",
+  "borrowed_from": [
+    "UNBench arXiv 2502.14122 — statement-generation task 的 input/output 结构借鉴",
+    "RAGEval (OpenBMB) — 召回相关性指标",
+    "rageval (gomate-community) — 召回-真值对比工具",
+    "我们 19-ADR — vintage 一票否决落 runtime"
+  ],
+  "scoring_dimensions": {
+    "event_recall": "RAG 返回的 events 覆盖 ideal_brief.key_events 的比例. Jaccard 或语义匹配 (Sentence-BERT) ≥ 0.7 算命中. 部分覆盖按比例给分.",
+    "structural_recall": "RAG 返回的 ongoing_structural_signals 覆盖 ideal_brief.ongoing_structural 的比例. 数值型 (CBI=7.5 等) 要求误差 ≤ 5%; 文本型语义匹配 ≥ 0.7.",
+    "canon_recall": "RAG 返回的 typikön anchors 覆盖 canon_anchors 的比例. 命中 = work 一致 (必须) + chapter 一致 (加分) + concept 语义匹配 (加分). 三件齐全=1.0, 仅 work 命中=0.4. **v1.1: 概念匹配优先用 concept_en 英文字段** (索引为英文语料).",
+    "fabrication_check": "RAG 返回的 events / canon citations 中, 含 fabrication_blocklist 任一项 = 严重失败. 建议: per-anchor 二值 pass/fail 而非比例分.",
+    "vintage_compliance": "RAG 返回的任何 source 的 source_publish_date > vintage_cutoff = 一票否决. 运行时硬断言违反应抛 (见我们 HINDCAST_TO_RAG_REQUEST §1 加固 #3)."
+  },
+  "eval_set_constraints": {
+    "is_held_aside": true,
+    "do_not_train_on": true,
+    "do_not_index_on": true,
+    "n_anchors": 8,
+    "statistical_confidence": "N=8 → 定性/方向性结论, 非统计置信",
+    "advisory": "此集合一旦泄漏进 RAG 训练或索引语料, 即报废, 须重新构建."
+  },
+  "anchors": [
+    {
+      "as_of": "1971-08-12",
+      "label": "1971 Nixon Shock (pre)",
+      "event": "Nixon Shock (1971-08-15 announcement)",
+      "vintage_cutoff": "1971-08-12",
+      "ground_truth_xau": {
+        "T+5": "up",
+        "T+20": "up"
+      },
+      "ideal_brief": {
+        "key_events": [
+          {
+            "event": "1971-08-13至1971-08-15，尼克松在 Camp David 召集经济顾问与关键内阁成员，酝酿重大货币政策调整；同时纽约/苏黎世金市出现单周美元抛售压力，法国和瑞士继续将美元兑换为黄金。",
+            "institutional_shift": "这表明国际货币规则正从‘可兑换的布雷顿森林秩序’滑向‘行政性暂停兑换/临时管制’的边缘。规则不是在市场中自然调整，而是在白宫—财政部—联储之间重新划分决策权：危机处置权向行政部门集中，联储独立性被总统政治目标压制。",
+            "reversibility": "low",
+            "transmission_channels": [
+              "国际货币安排",
+              "中央银行独立性",
+              "储备货币信任",
+              "跨境支付与结算规则",
+              "黄金储备配置",
+              "主权违约与契约可信度"
+            ]
+          },
+          {
+            "event": "1971-08-12前后，Connally 财政部长公开暗示‘重大政策变化’，并在美元抛售与黄金兑换压力上升背景下释放政策信号。",
+            "institutional_shift": "这是一种典型的危机政治中的预期管理：财政部开始扮演事实上的制度设计者，而非单纯执行者。它意味着货币制度调整已从技术争论转入政治博弈，政策承诺的可置信性下降，未来规则更可能由行政权主导而非多边约束主导。",
+            "reversibility": "medium",
+            "transmission_channels": [
+              "政策预期与契约可信度",
+              "汇兑规则",
+              "资本流动管制门槛",
+              "国际谈判权力再分配"
+            ]
+          }
+        ],
+        "ongoing_structural": [
+          "美元国际储备占比: 高位主导 (0.71)，但正在遭遇实质性信任测试",
+          "美元在贸易计价中的占比: 极高 (0.82)，说明网络外部性仍强，但并非不可挑战",
+          "SWIFT 式全球支付基础设施尚未成为当代意义上的治理工具，但跨境清算仍高度依赖美元中心规则",
+          "全球央行黄金储备/总外储占比: 高位 (0.42)，黄金仍是对美元承诺的外部约束与替代锚",
+          "美联储独立性: 中高但受压 (CBI=7.5；事件窗显示 Burns 正遭公开施压)",
+          "美元武器化金融工具: 尚未常态化 (月均使用次数 0.0)，主权金融工具尚未被系统性制度化为制裁武器",
+          "国际货币体系: 布雷顿森林框架处于脆弱末期，核心是‘可兑换承诺’与国内政治约束之间的冲突",
+          "美国国内政治: 1972 选举年偏向宽松的激励正在强化，对抗通胀与维持外部承诺之间存在明显政治张力"
+        ],
+        "reasoning": "从 North 的角度看，当前最关键的不是某个单独的价格波动，而是规则本身的可信度正在被重新定义：美元与黄金的兑换承诺、以及对外部约束的自我约束，正在被行政性应急权覆盖。制度变化一旦从‘规则约束政策’转为‘政策决定规则’，后续逆转通常不会只是技术修补，而是更深层的国际货币安排重写，因此路径依赖会迅速增强。\n\n从 Acemoglu-Robinson 的框架看，这是一次从相对包容的国际协作规则向更具攫取性、中心化、临时化管理的滑移：当危机使少数行政决策者能够暂停或重构承诺时，外部参与者对未来规则的可预期性会下降。这里的关键不是短期操作本身，而是它会不会成为‘先例’——一旦先例被建立，后续处理外部压力时，政治成本更低，制度回到旧框架的门槛更高。\n\n从 Olson 的视角，受益与受损群体已经很清楚：出口竞争部门、黄金持有者、银行与国际债权人、以及依赖美元结算的跨境主体，对制度变化的偏好并不一致。政策最终走向取决于谁能在白宫、财政部、联储和国会之间形成更强的集合行动与游说联盟。当前事件窗显示总统施压联储、财政部释放转向信号，说明行政联盟正在压过独立货币当局；这类结构变化通常不是一天完成，但一旦危机措施被采纳，就会把国际货币制度推入新的均衡，并可能持续多年。",
+        "what_could_be_wrong": "我最可能错在把一次危机中的临时应急安排过度解释为不可逆的制度重构，而低估了后续多边谈判与国内反对派对规则回摆的可能性。"
+      },
+      "canon_anchors": [
+        {
+          "work": "North 1990",
+          "chapter": "ch.5 Informal Constraints",
+          "concept": "制度变迁的非市场来源 — 行政命令重塑国际货币安排",
+          "concept_en": "non-market sources of institutional change — executive action reshaping the international monetary order",
+          "why_relevant": "Camp David 决策本质是 informal political coordination 颠覆 Bretton Woods 形式规则"
+        },
+        {
+          "work": "Olson 1965",
+          "chapter": "ch.4 Group Sizes & Selective Incentives",
+          "concept": "国际债权人 (法/瑞) vs 美国国内选民 — 后者更大、更分散、政治权重更高",
+          "concept_en": "international creditors (France, Switzerland) vs US domestic voters — large dispersed domestic constituency outweighs concentrated foreign creditors",
+          "why_relevant": "Burns 受 Nixon 选举年压力 = 国内大集团激励压倒分散外部债权人"
+        },
+        {
+          "work": "Acemoglu NBER (Institutions as Fundamental Cause 2005)",
+          "concept": "central bank independence as institutional capacity",
+          "concept_en": "central bank independence as institutional capacity; formal independence vs substantive autonomy",
+          "why_relevant": "CBI=7.5 名义高但实际被夺权 — 制度形式 vs 实质性能力分裂"
+        },
+        {
+          "work": "Dixit 2004",
+          "chapter": "ch.3 Self-Governance vs State",
+          "concept": "alternative governance under weak international rules",
+          "concept_en": "alternative modes of governance under weak international rules; private substitutes when collective enforcement fails",
+          "why_relevant": "Bretton Woods 兜底失效后, 各国开始寻求双边/区域替代清算"
+        }
+      ],
+      "fabrication_blocklist": [
+        "Plaza Accord (1985, 14 年后)",
+        "Reagan tax cut (1981)",
+        "Volcker disinflation (1979)",
+        "任何 1971-08-12 之后才发生的事件"
+      ],
+      "scoring_notes": "政治派该抓的核心: (a) Camp David 闭门=制度性政策事件即将出台; (b) Burns 公开承压=CBI 表面高但实质受损; (c) 法/瑞兑金=外部退出选项激活. 易遗漏盲区: 政治派可能只盯 Nixon-Burns 二人, 忽略 Connally 财长的关键作用 (他是真正的强势鹰派建议人). 弱信号: 国内 1972 选举年压力 (政治激励).",
+      "machine_baseline_v0_5_6": {
+        "source": "then_vs_now.json pass2_revised political_brief, 2026-05-20 跑",
+        "_note": "ideal_brief 直接用此 baseline; 后续如发现召回更完整版本可手工增补"
+      }
+    },
+    {
+      "as_of": "1973-10-05",
+      "label": "1973 Oil Embargo (pre)",
+      "event": "First Oil Embargo (1973-10-06 OPEC announcement)",
+      "vintage_cutoff": "1973-10-05",
+      "ground_truth_xau": {
+        "T+5": "up",
+        "T+20": "up"
+      },
+      "ideal_brief": {
+        "key_events": [
+          {
+            "event": "1973-10-04至10-05：中东军事调动加剧，出现“以色列总动员”标题，GPR在7日内出现尖峰，30日均值上升至2.5；同日OPEC维也纳会议宣布将于10/16重新评估油价，萨达特表态称阿拉伯国家“已准备好牺牲”。",
+            "institutional_shift": "这不是单纯的市场噪音，而是地缘政治冲击正在逼近能源供给规则。短期内，国家间通过战争与产油国协调重新定义了能源这一关键战略品的供给约束；OPEC会议意味着价格形成机制与资源租值分配权正在从企业/消费者端向产油国集体行动组织转移。",
+            "reversibility": "low",
+            "transmission_channels": [
+              "能源供给与定价制度",
+              "国际联盟与集体行动",
+              "预期形成与库存行为",
+              "财政收入与资源租分配",
+              "跨国支付与贸易结算安排"
+            ]
+          }
+        ],
+        "ongoing_structural": [
+          "美元国际储备占比: 高位主导 (0.78)，布雷顿森林体系后遗产仍在，美元仍是核心国际锚定货币",
+          "美元在贸易计价中的占比: 高位主导 (0.78)，大宗商品与跨境贸易仍深度美元化",
+          "SWIFT 在跨境支付占比: 早期体系化前夜的高集中状态 (0.95)，跨境支付网络高度中心化",
+          "双边本币结算占比: 几乎不存在 (0.0)，去美元化替代机制尚未形成",
+          "美联储独立性: 中高 (CBI=7.0)，中央银行在制度上具备较强自主性，但仍受宏观政治压力约束",
+          "美国财政-债务约束: 温和 (赤字/GDP 0.01，债务/GDP 0.34)，财政国家能力尚未进入高债务锁定阶段",
+          "全球央行黄金储备占比: 高 (0.4)，黄金仍是重要的国际信誉与储备资产",
+          "全球央行购金: 净卖出状态 (-150 吨)，说明当下制度惯性仍偏向美元/信用资产而非黄金重配",
+          "武器化金融工具使用: 尚未常态化 (0.0)，主权金融制裁工具门槛仍低、尚未制度化",
+          "中美力量对比: 美国显著占优 (CINC 比 0.2)，国际体系的分层结构仍稳定",
+          "通胀-增长政治压力: 高通胀、低失业、产出缺口偏正，政策当局面临分配冲突加剧的前夜",
+          "联邦基金利率相对隐含规则: 明显偏宽松（实际低于Taylor隐含水平），货币当局存在对增长/金融稳定的政治顾虑"
+        ],
+        "reasoning": "从 North 的视角看，当前最重要的不是价格本身，而是价格背后的规则正在被重新书写：OPEC 的重新评估会议、阿拉伯国家的战争动员、以及 GPR 的快速抬升，说明能源供给并非作为普通商品在市场里平滑调整，而是被国家间联盟和冲突重新政治化。若这一冲击继续推进，它会把“能源租金如何分配、谁能影响供给、谁承担冲击成本”变成制度性问题，而不是短期商业波动。\n\n从 Acemoglu-Robinson 的框架看，这类外生冲击往往会改变不同集团的相对组织能力。产油国通过 OPEC 的集体行动提升议价能力，消费者国与工业部门则面临更高的协调压力。若政策反应倾向于行政性配给、价格管制或紧急国家干预，那么这会把权力更多集中到执行机构和少数可游说部门手中，形成对分配规则的再设计。是否会演化为长期制度变化，取决于冲击是否迫使国家建立新的能源安全机制、储备制度或对外联盟安排；这些安排一旦成形，通常具有较强路径依赖。\n\n从 Olson 的集体行动角度，OPEC 之所以重要，不只是因为它有资源，而是它降低了成员国协调成本，能把分散的租金追求转化为可执行的共同政策。相对地，受冲击的进口国往往分散：消费者、制造业、运输业与财政部门之间激励并不一致，因此反应更可能通过行政命令和利益集团游说来拼装。也就是说，真正值得关注的是“谁能组织起来定义规则”，而不是单一价格变量的瞬时变动。此类结构变化通常不会在几天内逆转，即便战事缓和，能源安全、库存制度、外交结盟与国内分配政治也可能留下长期痕迹。",
+        "what_could_be_wrong": "我最可能错在把一次高强度地缘政治冲击过早判断为会固化成长期制度重构，而低估了各方在危机后恢复旧有交易安排的能力。"
+      },
+      "canon_anchors": [
+        {
+          "work": "Olson 1965",
+          "chapter": "ch.1 Cartel Problem",
+          "concept": "OPEC 作为成功卡特尔 — 小群体 + selective incentive (产油额配额制)",
+          "concept_en": "OPEC as a successful cartel — small-group cooperation with selective incentives (production quotas)",
+          "why_relevant": "OPEC 维也纳 10/16 重新评价机制 = Olson 小群体合作模型经典案例"
+        },
+        {
+          "work": "North 1990",
+          "chapter": "ch.10 Institutional Change via Shocks",
+          "concept": "外生冲击 (战争+禁运) 重塑长期能源-金融制度",
+          "concept_en": "exogenous shocks (war and embargo) reshaping long-run energy and financial institutions",
+          "why_relevant": "禁运启动 petrodollar recycling, 黄金重新成为通胀对冲制度"
+        },
+        {
+          "work": "Acemoglu NBER (Colonial Origins 2001)",
+          "concept": "资源富集国的攫取性制度",
+          "concept_en": "extractive institutions in resource-rich states; petro-state extractive elite politics",
+          "why_relevant": "OPEC 国家普遍攫取性 — 卡特尔行为符合 extractive elite 模型"
+        },
+        {
+          "work": "Dixit 2004",
+          "chapter": "ch.4 Trade & Embargo",
+          "concept": "战争状态下贸易制度被武器化",
+          "concept_en": "trade institutions weaponized during wartime — embargo as alternative governance under conflict",
+          "why_relevant": "禁运作为 alternative governance — 当国际贸易规则失效时的政治工具"
+        }
+      ],
+      "fabrication_blocklist": [
+        "1979 Iranian Revolution",
+        "1980 Volcker shock",
+        "Carter energy crisis (后续语义)",
+        "任何 1973-10-05 之后才发生的事件"
+      ],
+      "scoring_notes": "政治派该抓的核心: (a) 中东军事调动 + 以色列总动员=战争前夜地缘冲击; (b) OPEC 维也纳会议=卡特尔机制激活; (c) Sadat '准备牺牲' 表态=政治承诺信号. 易遗漏盲区: 1973 GPR 数据极差, 早年缺失; 政治派可能过度依赖 GPR 30日均值 (=2.5) 而忽略事件窗的定性信号. 该案例下 ongoing_structural 比 key_events 更重要.",
+      "machine_baseline_v0_5_6": {
+        "source": "then_vs_now.json pass2_revised political_brief, 2026-05-20 跑",
+        "_note": "ideal_brief 直接用此 baseline; 后续如发现召回更完整版本可手工增补"
+      }
+    },
+    {
+      "as_of": "1979-10-05",
+      "label": "1979 Volcker Shock (pre)",
+      "event": "Volcker Saturday Night Massacre (1979-10-06 new operating procedures)",
+      "vintage_cutoff": "1979-10-05",
+      "ground_truth_xau": {
+        "T+5": "up",
+        "T+20": "up"
+      },
+      "ideal_brief": {
+        "key_events": [
+          {
+            "event": "1979-10-05，Volcker 公开表态“通胀必须以失业为代价控制”",
+            "institutional_shift": "美联储的政策目标函数发生公开重排序：从对就业/增长的政治敏感性，转向对通胀纪律的优先承诺。这不是单次言论本身，而是央行试图重建反通胀可信度、扩大政策自主空间的信号。",
+            "reversibility": "low",
+            "transmission_channels": [
+              "央行独立性博弈",
+              "预期锚定与政策可信度",
+              "工资谈判与劳资关系",
+              "国会-白宫对货币政策的监督/施压"
+            ]
+          },
+          {
+            "event": "前 30 天内美元再度大跌，黄金现货突破 $400",
+            "institutional_shift": "市场对美元锚与货币纪律的信任继续受损，说明现有规则安排对通胀与货币稳定的约束不足，正在倒逼更强硬的政策体制重置。",
+            "reversibility": "medium",
+            "transmission_channels": [
+              "货币制度可信度",
+              "储备资产配置偏好",
+              "跨境结算与外汇干预",
+              "财政-货币协调压力"
+            ]
+          },
+          {
+            "event": "前 30 天内主要央行发生 2 次重要动作，GPR 30 日均值升至 2.2 且上行",
+            "institutional_shift": "国际环境中的政策不确定性与地缘风险抬升，货币当局面临更强的外部冲击与协调压力；这会提高主权工具被动员的频率，并强化政策防御性。",
+            "reversibility": "medium",
+            "transmission_channels": [
+              "国际储备管理",
+              "资本流动管理",
+              "跨境支付与清算安排",
+              "制裁/金融武器化预期"
+            ]
+          },
+          {
+            "event": "OFAC SDN 30 日新增 1 条",
+            "institutional_shift": "美国对金融制裁工具的使用保持常态化，显示主权金融工具已嵌入外交与安全政策工具箱；虽然当前强度不高，但这是制度化的先兆。",
+            "reversibility": "medium",
+            "transmission_channels": [
+              "美元清算体系武器化",
+              "合规成本",
+              "对手方规避与替代结算激励",
+              "银行中介行为"
+            ]
+          },
+          {
+            "event": "Tehran 大使馆事件在一个月后引爆的前奏已经出现于事件窗",
+            "institutional_shift": "国际政治冲突开始向安全与外交制度外溢，并可能迅速反向影响能源、制裁和美元体系的政治使用方式；这是典型的外生冲击触发点。",
+            "reversibility": "low",
+            "transmission_channels": [
+              "地缘政治风险",
+              "制裁升级",
+              "能源与支付安排",
+              "联盟政治与安全承诺"
+            ]
+          }
+        ],
+        "ongoing_structural": [
+          "美联储 CBI：中等（6.0），但在高通胀与公开政治表态下，实际独立性正进入压力测试阶段",
+          "美元国际储备占比：高位（0.78），但美元信任基础出现阶段性侵蚀",
+          "美元在贸易计价中的占比：高位（0.78），短期制度惯性强",
+          "双边本币结算占比：极低（0.0），替代性国际支付制度尚未形成",
+          "SWIFT 跨境支付占比：高位（0.5），网络外部性与路径依赖显著",
+          "全球央行年购金量：为负（-100 吨），但黄金正重新获得制度性避险地位",
+          "全球央行黄金储备/总外储占比：高位（0.45），表明储备多元化偏好并未消失",
+          "美国财政赤字/GDP：中低（0.02），公共债务/GDP：中等（0.32），财政失衡尚非主导矛盾，但为货币政治提供背景约束",
+          "武器化金融工具月均使用次数：低位起步（0.5），制度化使用已出现但尚未进入高强度常态",
+          "中美 CINC 比：0.22，国际权力结构仍明显偏向美国，故美元体系的制度惯性仍强"
+        ],
+        "reasoning": "从 North 的视角看，这组信号首先意味着货币制度的“规则可信度”正在被重新锻造。Volcker 的公开表态不是单纯的政策沟通，而是在高通胀环境下对央行目标函数的一次政治性重申：若通胀预期无法被压制，原有的名义稳定规则就失去约束力，央行必须以更高的政治成本换取更强的制度承诺。这里真正重要的不是某一时点的利率水平，而是央行是否能通过可观察的政治决断，重建其作为承诺装置的地位。\n\n从 Acemoglu-Robinson 的框架看，这是一场围绕“谁来承受调整成本”的制度分配冲突。公开强调“通胀必须以失业为代价控制”，本质上是在把短期分散损失转化为对通胀利益相关群体的约束，试图把货币制度从对既有分配联盟更友好的状态，推向更具纪律性的安排。若这一转向被国会、白宫和主要利益集团接受，它会形成路径依赖：一旦央行重建了反通胀声誉，逆转所需的政治成本会显著上升，因为任何重新放松都会被解读为制度背约。\n\nOlson 的视角则提醒我们，真正决定政策落点的不是抽象的“国家意志”，而是利益集团的组织能力与游说结构。在高通胀与美元走弱的环境下，受损并且组织化程度较高的持有固定名义资产者、金融中介与国际持币者，会更强烈地要求货币纪律；相对地，依赖宽松融资或通胀稀释债务的群体则会试图拖延调整。Volcker 的表态显示，联储正在试图借由危机时刻打破原有的分配均衡。若这一联盟重组成功，后续制度将更偏向中央银行自主性与通胀目标优先；若失败，则更可能回到政治周期驱动的宽松偏置。\n\n国际层面上，美元下跌、黄金上破与地缘风险上行，说明主权货币的外部支撑不仅来自国内法权结构，也来自国际秩序的接受度。当前美元网络效应仍然很强，替代结算体系尚未成形，因此短期更像是对既有制度的压力测试，而非立即替代。但一旦安全事件、制裁工具与支付体系结合得更紧，美元清算体系的武器化门槛就会被重写；这类变化通常不是线性退场，而是通过少数关键事件触发的制度跃迁。",
+        "what_could_be_wrong": "我最可能错在把一次危机中的强硬表态和市场波动，过度解释为已经完成的制度重构，而低估了国会、利益集团和后续政治妥协对这次转向的反向拉扯。"
+      },
+      "canon_anchors": [
+        {
+          "work": "North 1990",
+          "chapter": "ch.6 Formal vs Informal Constraints",
+          "concept": "Volcker 操作程序变更 = formal rule change 制度化反通胀承诺",
+          "concept_en": "Volcker's operating-procedure change as a formal rule change institutionalizing the anti-inflation commitment",
+          "why_relevant": "从 Fed funds targeting 转向 reserves targeting 是规则层面变革, 非自由裁量"
+        },
+        {
+          "work": "Acemoglu NBER (Institutions Fundamental Cause 2005)",
+          "concept": "央行独立性作为制度刚性来源",
+          "concept_en": "central bank independence as source of institutional rigidity and credibility",
+          "why_relevant": "Carter 不干预 Volcker 决策 (CBI=6.0) = 行政自我克制的制度信号"
+        },
+        {
+          "work": "Dixit 2004",
+          "chapter": "ch.2 Rule-Based vs Discretion",
+          "concept": "规则承诺 (precommitment) 击败短期政治权宜",
+          "concept_en": "rule-based commitment (precommitment) defeating short-term political expediency",
+          "why_relevant": "Volcker '通胀必须以失业为代价控制' 是 commitment device, 不是预测"
+        },
+        {
+          "work": "Olson 1965",
+          "chapter": "ch.3 Large Groups & Public Goods",
+          "concept": "反通胀作为公共物品 — 集中成本 (失业者) vs 分散收益 (所有持币者)",
+          "concept_en": "anti-inflation as a public good — concentrated costs on the unemployed vs dispersed benefits to all currency holders",
+          "why_relevant": "Volcker 故意选择政治不可持续路径 = 短期 unpopular 但长期 institutional payoff"
+        }
+      ],
+      "fabrication_blocklist": [
+        "Reagan election (1980-11)",
+        "1981 recession 后续叙事",
+        "Plaza Accord (1985)",
+        "任何 1979-10-05 之后才发生的事件"
+      ],
+      "scoring_notes": "政治派该抓的核心: (a) Volcker 公开承诺 (commitment device, North 视角); (b) Tehran 大使馆事件前奏 (1979-11 才爆发, 当时已有信号); (c) Carter 政府不阻止 Fed = CBI 实质性测试. 易遗漏盲区: 政治派容易把 Volcker 当英雄叙事, 忽略 Carter 行政方的'放手'本身就是制度信号 (后被 Reagan 继承).",
+      "machine_baseline_v0_5_6": {
+        "source": "then_vs_now.json pass2_revised political_brief, 2026-05-20 跑",
+        "_note": "ideal_brief 直接用此 baseline; 后续如发现召回更完整版本可手工增补"
+      }
+    },
+    {
+      "as_of": "1992-09-15",
+      "label": "1992 ERM Crisis (pre Black Wednesday)",
+      "event": "Black Wednesday — UK forced out of ERM (1992-09-16)",
+      "vintage_cutoff": "1992-09-15",
+      "ground_truth_xau": {
+        "T+5": "down",
+        "T+20": "flat"
+      },
+      "ideal_brief": {
+        "key_events": [
+          {
+            "event": "1992-09-13 意大利里拉紧急贬值 7%，同时英国央行已在前后数日多次入市干预外汇市场（数十亿美元规模）",
+            "institutional_shift": "这不是单纯的汇率波动，而是欧洲汇率机制（ERM）内部的维持规则开始失去可信度：成员国为捍卫固定汇率所需的政策成本上升，央行与财政当局的约束从“市场干预即可稳定”转向“必须承受更强的国内政治与外储压力”。规则层面的含义是，维持汇率平价的制度承诺正在被公开测试。",
+            "reversibility": "medium",
+            "transmission_channels": [
+              "汇率制度可信度",
+              "央行外汇干预机制",
+              "资本流动预期",
+              "主权政策空间",
+              "跨境支付与清算安排"
+            ]
+          },
+          {
+            "event": "1992-09-15 市场公开强化对 ERM 与英镑/德国马克汇率平价的不可持续预期，且 Soros 公开表态 'ERM 是不可持续的'",
+            "institutional_shift": "这表明集体行动与投机者协调正在放大对固定汇率制度的挤兑压力：一旦市场形成共识，成员国维持平价的政治激励会迅速恶化，制度从“锚定预期”转为“被迫防守”。从 Olson 视角看，少数高协调度参与者可以显著改变政策博弈的边际条件。",
+            "reversibility": "low",
+            "transmission_channels": [
+              "汇率预期协调",
+              "央行信誉",
+              "外汇储备消耗",
+              "利率政策约束",
+              "国内政治支持成本"
+            ]
+          },
+          {
+            "event": "1992-09 重大经济政策事件即将出台，且主要央行 30 日内出现 6 次重要动作，显示政策当局已进入高频应对状态",
+            "institutional_shift": "这意味着制度调整不再是静态承诺，而是进入危机管理模式：政策制定从常规规则执行转向临时协调、短期干预与可能的框架修补。行政部门与央行的裁量权在危机中上升，但也暴露出现有制度设计的脆弱性。",
+            "reversibility": "medium",
+            "transmission_channels": [
+              "政策不确定性",
+              "央行独立性博弈",
+              "国际协调机制",
+              "短期资本流动",
+              "市场流动性"
+            ]
+          }
+        ],
+        "ongoing_structural": [
+          "Fed 独立性: 高位稳定 (CBI=8.5, 未见公开行政施压)",
+          "美元国际储备占比: 仍处主导位 (0.6)",
+          "SWIFT 跨境支付主导地位: 强 (0.85)",
+          "双边本币结算: 仍接近零 (0.0)",
+          "全球央行黄金储备/总外储占比: 中高位 (0.3)",
+          "武器化金融工具使用: 低频常态 (月均 0.2 次)",
+          "欧洲汇率机制(ERM): 进入脆弱防守期，规则承诺弱化",
+          "英国/欧洲成员国货币当局: 外汇干预压力显著上升",
+          "美元安全资产地位: 在本事件窗中被动强化",
+          "国际货币秩序: 仍是美元-清算体系主导，区域固定汇率安排出现制度性裂缝"
+        ],
+        "reasoning": "从 North 的视角看，1992 年 9 月这一组事件的核心不是“某一日汇率变化”，而是制度承诺的可执行性正在被重新定价。ERM 的稳定依赖成员国持续承担国内调整成本；一旦经济主体普遍预期某些成员国无法长期维持平价，原先靠规则约束形成的均衡就会向“防守失败”迁移。这里最关键的不是价格本身，而是规则的可信度和执行成本已经发生变化。\n\n从 Acemoglu-Robinson 的框架看，这暴露的是一个偏向精英协调、但对成员国国内政治承压较强的制度安排：固定汇率为信誉与整合提供表面稳定，却在冲击下要求政策当局牺牲国内就业、利率与财政空间来维护外部承诺。若继续依赖高成本防守，制度会从“约束市场”转为“约束本国政府”，其政治可持续性开始下降。是否会逆转，取决于成员国内部是否愿意为维持该安排支付更高的政治代价。\n\n从 Olson 的角度，市场参与者并不是原子化的：当少数高度协调的投机力量相信制度承诺不可持续时，他们形成的集体行动可以迅速放大对政策当局的压力，而分散的纳税人、雇员与一般选民很难对等组织起来支持持续防守。于是，政策博弈被少数高协调度集团重新塑形，外汇干预、利率捍卫与政治让步之间的边际成本开始失衡。考虑到事件窗显示政策动作已明显增多，这更像是一个正在进入临界点的制度危机，而不是一次普通的市场噪音。\n\n就可持续性而言，当前最值得关注的是：ERM 这种安排一旦被市场验证为可被击穿，其制度声誉修复成本通常高于建立成本。短期内它可能通过临时干预延续，但若没有更深层的规则重写、财政—货币协调重构或退出安排，路径依赖会推动更多参与者提前押注制度调整，而非继续相信原有承诺。",
+        "what_could_be_wrong": "我最可能错在把一段高强度但短暂的危机应对，过早解读成固定汇率制度的结构性终结，而低估了当局通过临时协调和政治承诺暂时延缓危机的能力。"
+      },
+      "canon_anchors": [
+        {
+          "work": "North 1990",
+          "chapter": "ch.7 Path Dependence",
+          "concept": "欧洲货币联盟的历史路径锁定 — ERM 是 EMU 前奏",
+          "concept_en": "path dependence of European monetary union — ERM as precursor to EMU; crisis accelerates rather than reverses integration",
+          "why_relevant": "Black Wednesday 不是 ERM 终结, 反而是 EMU 加速 = 危机后路径更深"
+        },
+        {
+          "work": "Olson 1965",
+          "chapter": "ch.5 Large Groups Problem",
+          "concept": "ERM 作为大集团承诺机制的失败 — 各国央行集体行动困境",
+          "concept_en": "ERM as failure of large-group commitment mechanism — collective-action problem among national central banks (Bundesbank vs others)",
+          "why_relevant": "Bundesbank 不愿降息 (国家利益) vs ERM 平价 (集体物品) = Olson 经典紧张"
+        },
+        {
+          "work": "Acemoglu NBER (Unbundling Institutions 2003)",
+          "concept": "货币主权与财政主权的分离",
+          "concept_en": "separation of monetary sovereignty from fiscal sovereignty; design flaws in partial monetary union",
+          "why_relevant": "UK 退出 ERM 后保留央行+财政一体性, 暴露 ERM 设计缺陷"
+        },
+        {
+          "work": "Dixit 2004",
+          "chapter": "ch.3 Self-Governance Modes",
+          "concept": "汇率机制的自律 vs 央行干预",
+          "concept_en": "exchange-rate mechanism self-discipline versus central-bank intervention; limits of state-level governance tools",
+          "why_relevant": "BoE 数十亿美元干预失败 = 国家级 governance 工具的极限"
+        }
+      ],
+      "fabrication_blocklist": [
+        "1999 Euro launch",
+        "2010 Greek debt crisis",
+        "2012 'whatever it takes' Draghi",
+        "任何 1992-09-15 之后才发生的事件"
+      ],
+      "scoring_notes": "政治派该抓的核心: (a) 意大利里拉 9/13 紧急贬值=前哨信号; (b) Soros 公开 '不可持续' 表态=私人行为者 vs 国家承诺; (c) Bundesbank 拒绝协助 (隐含)=国家主权高于联盟承诺. 易遗漏盲区: 政治派可能聚焦 Soros 叙事, 忽略 Bundesbank 的关键不作为, 后者才是制度层面真正的'制度承诺失效'.",
+      "machine_baseline_v0_5_6": {
+        "source": "then_vs_now.json pass2_revised political_brief, 2026-05-20 跑",
+        "_note": "ideal_brief 直接用此 baseline; 后续如发现召回更完整版本可手工增补"
+      }
+    },
+    {
+      "as_of": "2008-09-14",
+      "label": "2008 Lehman (pre)",
+      "event": "Lehman bankruptcy (2008-09-15)",
+      "vintage_cutoff": "2008-09-14",
+      "ground_truth_xau": {
+        "T+5": "up",
+        "T+20": "flat"
+      },
+      "ideal_brief": {
+        "key_events": [
+          {
+            "event": "2008-09-07 美国政府接管 Fannie Mae 与 Freddie Mac",
+            "institutional_shift": "政府对住房金融核心准公共机构实施直接接管，意味着危机处理中产权边界、隐性担保与公共责任的规则被临时重写；市场对“私人收益、公共兜底”的预期被制度化确认。",
+            "reversibility": "low",
+            "transmission_channels": [
+              "住房金融治理结构",
+              "政府或有负债与财政承诺",
+              "金融机构预期与风险定价",
+              "监管权力集中"
+            ]
+          },
+          {
+            "event": "2008-09-12 至 2008-09-14 Lehman 寻找买家失败，Barclays/BoA 退出，AIG 评级被降",
+            "institutional_shift": "对系统性金融机构的处置规则出现临界变化：一方面，救助边界不再清晰；另一方面，市场开始重新评估“谁会被救、谁会被清算”的政治约束。评级下调又把私人信用评估嵌入公共危机处置，放大了对制度承诺可信度的冲击。",
+            "reversibility": "medium",
+            "transmission_channels": [
+              "系统性金融机构处置规则",
+              "对手方风险与清算链条",
+              "短期流动性安排",
+              "监管机构救助预期"
+            ]
+          },
+          {
+            "event": "2008-09-12 至 2008-09-14 主要央行连续 5 次重要动作",
+            "institutional_shift": "央行从常规利率管理逐步转向危机中的流动性提供者与市场稳定器，显示货币当局的职能边界正在扩展；这通常伴随资产负债表工具、互换安排和非常规操作的制度化起点。",
+            "reversibility": "medium",
+            "transmission_channels": [
+              "央行资产负债表扩张",
+              "流动性支持机制",
+              "跨境美元融资安排",
+              "央行独立性与财政协同关系"
+            ]
+          }
+        ],
+        "ongoing_structural": [
+          "美联储独立性: 高位但进入压力测试阶段 (CBI=8.0, 仍未见公开政治夺权)",
+          "美元国际储备地位: 仍是核心锚 (0.64, 贸易计价0.65, SWIFT跨境支付0.98)",
+          "美元清算体系武器化: 早期/低频阶段 (OFAC SDN 30日新增0, 尚未出现常态化高频工具化)",
+          "全球金融秩序: 由市场纪律向国家担保切换的临界期 (Fannie/Freddie 接管后, 系统性风险处置政治化)",
+          "国际权力结构: 美中相对力量仍不对称但已进入长期追赶区间 (CINC 比0.58)",
+          "危机政治条件: 外生冲击已激活, 但尚未出现广泛地缘政治升级 (GPR 30日均值1.1, stable)",
+          "国内政策张力: 通胀仍高于目标且增长/就业走弱, 为货币与财政的制度协同制造压力"
+        ],
+        "reasoning": "从 North 的视角看, 这不是单纯的市场波动, 而是金融制度中的“产权与担保边界”在重画。Fannie/Freddie 接管把原本半私半公的信用支撑显性化, 等于把隐性国家担保变成公开政治承诺; 这类变化一旦发生, 往往不会轻易回到原先的模糊状态, 因为私人部门会据此重构预期, 政府也会被锁定为最终担保人。Lehman 失败与 AIG 降级则提示, 处置规则正在从“尽量维持连续性”转向“谁也无法确信边界在哪里”, 这会强化制度不确定性本身, 而不只是个体机构脆弱性。\n\n从 Acemoglu-Robinson 的框架看, 这里出现的是危机驱动的制度转轨窗口: 当系统性冲击到来, 原本分散的利益集团会围绕救助、清算和监管重组重新结盟。接管两房意味着国家直接进入关键金融节点, 这既可能被解释为更包容的公共稳定化, 也可能成为未来更强国家干预的先例。其关键不在一次行动本身, 而在它是否把“政府兜底大机构”变成可重复的默认规则; 若是, 路径依赖会很强, 因为大型金融组织会据此继续组织游说与风险承担。\n\n从 Olson 角度看, 这类危机最重要的是集体行动结构的变化: 平时分散的纳税人和储户难以形成一致偏好, 但金融机构、评级机构、经纪商和大行却能在危机中迅速协调, 影响救助边界与监管文本。央行 5 次重要动作说明货币当局被迫扩大职能, 这通常会在后续沉淀为新的操作规范和机构能力, 不是一次性临时措施就能完全撤回。总体上, 这是一场外生冲击触发的制度重排, 长期含义在于: 金融治理从“市场自治+有限兜底”向“更高国家介入度”的方向移动, 而这一移动的逆转政治成本会显著上升。",
+        "what_could_be_wrong": "我最可能错在把危机中的临时救助与流动性措施误读为持久制度重构, 而低估了事后政治反弹和规则回归的可能性。"
+      },
+      "canon_anchors": [
+        {
+          "work": "Ostrom 1990",
+          "chapter": "ch.3 Common-Pool Governance",
+          "concept": "金融稳定作为 commons; 监管者作为 commons 治理机构",
+          "concept_en": "financial stability as a common-pool resource; regulators as commons governance institution; tragedy of the commons in systemic risk",
+          "why_relevant": "Fannie/Freddie 接管 = 中央国家替代市场作为 commons 守护者"
+        },
+        {
+          "work": "North 1990",
+          "chapter": "ch.6 Formal vs Informal Constraints",
+          "concept": "bankruptcy law (formal) vs 'too big to fail' (informal)",
+          "concept_en": "formal bankruptcy law versus informal 'too big to fail' norm; selective enforcement of informal constraints",
+          "why_relevant": "Lehman 让倒 vs Bear/AIG 救助 = informal rule 在选择性执行"
+        },
+        {
+          "work": "Olson 1965",
+          "chapter": "ch.2 Collective Action Failures",
+          "concept": "金融机构利益集中 (银行) vs 救助成本分散 (纳税人)",
+          "concept_en": "concentrated bank gains vs dispersed taxpayer bailout costs; Olson asymmetry in financial-crisis politics",
+          "why_relevant": "TARP 谈判过程典型 Olson 模型 — 集中收益 vs 分散成本的政治不对称"
+        },
+        {
+          "work": "Acemoglu NBER (Institutions Fundamental Cause 2005)",
+          "concept": "危机时国家能力测试 — 制度框架被压到极限",
+          "concept_en": "state-capacity stress test during crisis — institutional framework pushed to its limits and temporarily expanded",
+          "why_relevant": "Fed-Treasury 协调 = 制度框架在危机下的临时性扩张, 后写入新规"
+        }
+      ],
+      "fabrication_blocklist": [
+        "Dodd-Frank (2010-07 签署)",
+        "QE2 / QE3 后续 Fed 行动",
+        "European debt crisis (2010+)",
+        "任何 2008-09-14 之后才发生的事件"
+      ],
+      "scoring_notes": "政治派该抓的核心: (a) Fannie/Freddie 接管=国家担保化转向; (b) Lehman 周末并购失败=私人自救机制崩盘; (c) AIG 评级降=系统性风险跨机构扩散; (d) Paulson-Bernanke 周末闭门=制度框架被临时性扩张. 易遗漏盲区: 政治派可能只看 Lehman, 忽略 Fannie/Freddie 比 Lehman 更早=制度信号. Ostrom 视角的关键: 金融稳定是公共池塘资源, 监管失败是 commons 治理崩溃.",
+      "machine_baseline_v0_5_6": {
+        "source": "then_vs_now.json pass2_revised political_brief, 2026-05-20 跑",
+        "_note": "ideal_brief 直接用此 baseline; 后续如发现召回更完整版本可手工增补"
+      }
+    },
+    {
+      "as_of": "2018-03-21",
+      "label": "2018 US-China Trade War (pre Section 301)",
+      "event": "Trump Section 301 tariffs on China (2018-03-22)",
+      "vintage_cutoff": "2018-03-21",
+      "ground_truth_xau": {
+        "T+5": "flat",
+        "T+20": "up"
+      },
+      "ideal_brief": {
+        "key_events": [
+          {
+            "event": "2018-03-21 前后，USTR 完成对中国的 Section 301 调查报告；同一事件窗内，特朗普多次公开表示对华关税“势在必行”。",
+            "institutional_shift": "这标志着美国对华经贸摩擦从调查/威慑阶段，进入可被行政部门动用的正式政策工具阶段：规则层面从“是否启动”转向“如何选择、实施和升级关税工具”。行政权相对立法与外部约束的可操作空间扩大，贸易政策的任意性与谈判筹码化上升。",
+            "reversibility": "medium",
+            "transmission_channels": [
+              "贸易政策不确定性",
+              "跨国供应链重组",
+              "企业投资延迟",
+              "关税与非关税壁垒预期",
+              "国际谈判与报复性政策循环"
+            ]
+          },
+          {
+            "event": "前 30 天内，GPR 30 日均值升至 1.1 且呈上升趋势，同时 OFAC SDN 30 日新增 3 条，显示制裁/金融武器化工具的使用仍在持续。",
+            "institutional_shift": "这反映出美国将金融基础设施与制裁名单作为政策工具的常态化倾向在加强，主权工具的使用门槛并未上升，反而更容易被纳入地缘政治与经济博弈。制度层面上，国际经济关系的规则化合作空间被部分替换为可裁量的安全化治理。",
+            "reversibility": "low",
+            "transmission_channels": [
+              "跨境支付与清算安排",
+              "合规成本",
+              "美元体系依赖结构",
+              "盟友与对手的替代支付安排",
+              "资本流动与风险溢价的制度性重估"
+            ]
+          },
+          {
+            "event": "2018-02-05 Powell 接任 Fed 主席，且事件窗显示加息路径已通过 dot plot 被市场充分定价，Fed funds futures 已定价 2018 全年 3 次加息。",
+            "institutional_shift": "央行领导层更替本身是制度事件，但在此时点更重要的是：货币政策规则预期仍由既有框架主导，央行独立性并未出现公开受损；政策连续性强于政治断裂。行政更迭没有立即改写央行的激励约束。",
+            "reversibility": "high",
+            "transmission_channels": [
+              "央行预期管理",
+              "利率路径预期",
+              "资产定价中的政策不确定性",
+              "美元体系吸引力",
+              "国内政治对独立性的后续施压空间"
+            ]
+          }
+        ],
+        "ongoing_structural": [
+          "美联储独立性: 较高 (CBI=7.5, 近期未见公开政治接管)",
+          "美国对华贸易制度: 从调查威慑转向执行前夜 (Section 301 已完成, 具备行政裁量工具)",
+          "美元国际储备地位: 仍然强势 (0.62, 但未见结构性替代加速)",
+          "美元在贸易计价中的中心性: 高位稳定 (0.62)",
+          "SWIFT 跨境支付中心性: 极高 (0.99, 替代网络尚处萌芽)",
+          "金融武器化: 进入常态化使用区间 (OFAC SDN 月增可见, 但未显示全面系统性脱钩)",
+          "全球地缘政治风险: 上行中的常态化压力 (GPR 12 月滚动均值=0.9, 30 日均值上行)",
+          "中美权力差距: 收敛但美国仍占优势 (CINC 比=0.95, 竞争性上升但未达制度翻转)",
+          "全球央行黄金配置: 仍在缓慢抬升 (年购金量 300 吨, 黄金储备占外储比重 0.28)"
+        ],
+        "reasoning": "从 North 的视角看，这组信息最重要的不是某一个单独的关税表态，而是美国贸易政策正在从“低摩擦的规则预期”转入“高裁量的行政工具化”。Section 301 调查完成意味着政策执行的制度门槛被跨过，接下来关键不再是是否存在摩擦，而是行政部门如何把贸易规则当作博弈筹码使用。这类变化一旦落地，企业与盟友面对的不是一次性事件，而是对未来规则稳定性的重新估值；因此它的政治后果通常比当期新闻更持久。\n\n从 Acemoglu-Robinson 的框架看，这更像是制度从相对包容的开放贸易秩序，向更具攫取性、更多以国内政治联盟和双边施压为导向的工具性规则移动。这里的核心并不是立刻出现全面封闭，而是权力向行政部门和安全化叙事集中，贸易政策开始服务于更窄的政治目标集合。若这种做法获得选民和关键利益集团支持，它会形成路径依赖：一旦关税、制裁、出口管制被证明有效，未来政府更容易复制这些工具，逆转的政治成本会越来越高。\n\n从 Olson 的角度，当前最值得注意的是利益集团的组织能力。贸易冲突会迅速催生受损行业与受益行业的再结盟：出口商、进口依赖型企业、供应链中介、合规服务商、国家安全官僚体系都可能形成不同方向的游说压力。与此同时，OFAC 使用频率和 GPR 上行说明金融与安全工具已在政策菜单中常态化，这会扩大行政部门的裁量空间，但也会增加企业对规则可预期性的怀疑。整体上，我看到的是一个“政策工具箱扩张、制度可逆性下降、但尚未发生全面制度断裂”的阶段；短期戏剧性很强，长期制度含义更重。",
+        "what_could_be_wrong": "我最可能错在把一次高可见度的政治冲突过度解释为稳定的制度转轨，而低估了后续国会、企业游说和盟友协调对行政裁量的反制。"
+      },
+      "canon_anchors": [
+        {
+          "work": "Olson 1965",
+          "chapter": "ch.1 Logic of Collective Action",
+          "concept": "集中收益分散成本 — 钢铝工人 vs 消费者",
+          "concept_en": "concentrated benefits, dispersed costs — steel/aluminum workers vs consumers; political viability of trade protectionism",
+          "why_relevant": "贸易保护主义的政治可行性=Olson 经典逻辑"
+        },
+        {
+          "work": "Acemoglu (Why Nations Fail 2012; NBER versions)",
+          "concept": "extractive elite politics in democracy — 国内联盟驱动对外攫取",
+          "concept_en": "extractive elite politics within a democracy — domestic coalitions driving external extraction; protectionism as elite-coalition policy",
+          "why_relevant": "Section 301 总统单边授权扩张 = 行政权从程序约束中收回"
+        },
+        {
+          "work": "North 1990",
+          "chapter": "ch.11 Institutional Change",
+          "concept": "行政权扩张作为制度路径依赖的临界点",
+          "concept_en": "executive-power expansion as a path-dependence tipping point in institutional change; reactivation of dormant statutory authority",
+          "why_relevant": "Section 301 工具激活后回撤政治成本高, 路径锁定"
+        },
+        {
+          "work": "Dixit 2004",
+          "chapter": "ch.4 International Governance Failures",
+          "concept": "WTO 多边规则失能下的单边裁量替代",
+          "concept_en": "unilateral discretion replacing failed WTO multilateral rules; national-security exception as alternative governance",
+          "why_relevant": "国安例外条款扩张 = 多边治理被双边武器化替代"
+        }
+      ],
+      "fabrication_blocklist": [
+        "Phase One trade deal (2020-01)",
+        "Trump-Xi G20 truce (2018-12)",
+        "CHIPS Act (2022)",
+        "任何 2018-03-21 之后才发生的事件"
+      ],
+      "scoring_notes": "政治派该抓的核心: (a) USTR Section 301 报告完成=行政工具激活; (b) Trump 公开 '关税势在必行'=承诺锁定; (c) Powell 接任未变 Fed 路径=CBI 稳固. 易遗漏盲区: 政治派可能只看双边贸易戏剧, 忽略 Section 301 机制本身是 30 年代法案被激活 = North 路径依赖最经典案例 (沉睡条款 30 年, 一旦激活就难收回).",
+      "machine_baseline_v0_5_6": {
+        "source": "then_vs_now.json pass2_revised political_brief, 2026-05-20 跑",
+        "_note": "ideal_brief 直接用此 baseline; 后续如发现召回更完整版本可手工增补"
+      }
+    },
+    {
+      "as_of": "2020-02-28",
+      "label": "2020 COVID Crash (pre)",
+      "event": "COVID-19 global panic week (2020-02-28 onwards)",
+      "vintage_cutoff": "2020-02-28",
+      "ground_truth_xau": {
+        "T+5": "up",
+        "T+20": "up"
+      },
+      "ideal_brief": {
+        "key_events": [
+          {
+            "event": "2020-02-22 至 2020-02-28：意大利北部封城、韩国大邱封城，WHO 于 2/25 将 COVID 风险评级上调；同一窗口内美股自 2/24 起连续暴跌，VIX 突破 40，Fed 主席 Powell 紧急表态准备行动",
+            "institutional_shift": "公共卫生事件开始转化为跨部门治理冲击：行政部门、卫生组织与央行同时进入危机响应状态，政策从常规程序切换到紧急协调。央行沟通从常态前瞻指引转向危机兜底承诺，意味着货币当局的裁量空间被主动扩大，危机管理优先级上升。",
+            "reversibility": "medium",
+            "transmission_channels": [
+              "中央银行沟通与流动性工具",
+              "财政-货币协调",
+              "金融市场风险偏好与资产定价",
+              "跨境支付与美元流动性安排"
+            ]
+          }
+        ],
+        "ongoing_structural": [
+          "美联储独立性: 较高 (CBI=7.0, 但危机期政策沟通更偏向临时性裁量扩张)",
+          "美元国际储备地位: 强势锁定 (储备占比0.6, 贸易计价占比0.6, SWIFT 跨境支付占比0.99)",
+          "美元武器化金融工具: 低到中等常态化 (30日新增SDN 2条, 使用频率0.8/月, 尚未显示制度性跃迁)",
+          "全球政治风险: 上升但仍属外生冲击主导 (GPR 30日均值1.8且上行, 7日内出现spike)",
+          "央行黄金偏好: 持续累积 (全球央行年购金600吨, 黄金占外储比0.3)",
+          "中美相对实力与国际制度竞争: 竞争存在但未出现结构性制度重排 (CINC比1.1, 双边本币结算占比0.1)"
+        ],
+        "reasoning": "从 North 的视角看，这一时点最重要的不是“疫情本身”，而是疫情正在把原本分散的市场波动转化为需要制度化应对的治理压力：卫生机构、行政部门与央行被迫进入联动状态，临时性危机治理机制开始替代常规政策节奏。Powell 的紧急表态不是单纯市场讯号，而是央行作为制度节点在危机中重新定义自身裁量边界的动作；这通常不会立刻改变正式规则，但会改变未来几周内政策互动的默认方式。\n\n从 Acemoglu-Robinson 的框架看，这里还看不到“包容性/攫取性制度”的根本翻转，但能看到危机中权力向行政-技术官僚端集中：公共卫生紧急状态提高了集中决策的正当性，央行与财政部门更容易获得非常规工具的政治许可。这样的变化往往是路径依赖的起点，因为一旦紧急权力、非常规沟通和跨机构协调被证明有效，后续逆转的政治成本会高于启动成本；但就 2020-02-28 这个窗口而言，它仍更像是危机治理机制的启动，而非制度永久重写。\n\n从 Olson 的利益集团与集体行动视角看，市场崩跌和疫情扩散会迅速重塑游说排序：金融部门、实体企业、劳工与地方政府会围绕流动性、信贷和防疫资源展开竞争。当前可见的 SDN 新增并没有显示制裁工具发生制度升级，但全球政治风险上升会提高“主权工具武器化”的政治容忍度；与此同时，美元结算体系、SWIFT 网络和央行储备结构仍高度锁定，说明短期内最强的惯性仍在现有国际金融架构一侧。换言之，这一阶段更像是一次外生冲击对既有制度安排的压力测试，而不是既有国际秩序的即时替代。",
+        "what_could_be_wrong": "我最可能错在把一次强烈但仍早期的危机响应，过度解读为制度层面的持久权力转移，而低估了危机过去后政策回归常态的反作用。"
+      },
+      "canon_anchors": [
+        {
+          "work": "Ostrom 1990",
+          "chapter": "ch.2 Tragedy of the Commons Critique",
+          "concept": "公共卫生作为全球 commons; 各国治理能力 vs 国际协调失败",
+          "concept_en": "public health as a global commons; national governance capacity versus international coordination failure",
+          "why_relevant": "WHO 升级警告 + 各国封城孤立行动 = 缺乏 commons 治理的典型反例"
+        },
+        {
+          "work": "Olson 1965",
+          "chapter": "ch.1 Free-Rider Problem",
+          "concept": "全球疫情响应的集体行动困境 — 大集团免费搭车",
+          "concept_en": "global pandemic response as a collective-action problem — large-group free-riding by states",
+          "why_relevant": "各国互相依赖防疫但又互相设关 = Olson 大集团失败模型"
+        },
+        {
+          "work": "Acemoglu NBER (Institutions Fundamental Cause 2005)",
+          "concept": "国家治理能力 (state capacity) 在突发危机的可见性",
+          "concept_en": "state capacity becomes visible during sudden crisis; comparative institutional response to exogenous shock",
+          "why_relevant": "意大利 / 韩国对比 = 国家能力差异在同等冲击下显化"
+        },
+        {
+          "work": "North 1990",
+          "chapter": "ch.9 Adaptive Efficiency",
+          "concept": "制度适应性 — 紧急权扩张是否会回收",
+          "concept_en": "institutional adaptive efficiency — will emergency-power expansion be retracted or become permanent",
+          "why_relevant": "Powell 紧急表态准备行动 = Fed 制度弹性的政治信号"
+        }
+      ],
+      "fabrication_blocklist": [
+        "CARES Act (2020-03-27)",
+        "Operation Warp Speed (2020-05+)",
+        "Vaccine rollout (2020-12+)",
+        "任何 2020-02-28 之后才发生的事件"
+      ],
+      "scoring_notes": "政治派该抓的核心: (a) WHO 2/25 警告升级=国际治理机构动作; (b) 意大利/韩国封城=国家级紧急治理工具被激活; (c) Powell 紧急表态=央行 commitment device. 易遗漏盲区: 政治派容易聚焦 Powell, 忽略 WHO 这条 — WHO 才是 commons 治理的形式机构, 它的警告升级是政治信号 (各国可以据此动员).",
+      "machine_baseline_v0_5_6": {
+        "source": "then_vs_now.json pass2_revised political_brief, 2026-05-20 跑",
+        "_note": "ideal_brief 直接用此 baseline; 后续如发现召回更完整版本可手工增补"
+      }
+    },
+    {
+      "as_of": "2022-02-23",
+      "label": "2022 Russia Sanctions (pre)",
+      "event": "Russia invasion + reserve freeze (2022-02-24/26)",
+      "vintage_cutoff": "2022-02-23",
+      "ground_truth_xau": {
+        "T+5": "up",
+        "T+20": "up"
+      },
+      "ideal_brief": {
+        "key_events": [
+          {
+            "event": "2022-02-21，普京承认顿涅茨克/卢甘斯克独立，并据此推进对乌克兰东部地区的主权重划。",
+            "institutional_shift": "这不是单纯的外交口头升级，而是对既有国际边界与主权承认规则的直接改写，意味着以事实控制和单边承认为基础的领土/安全秩序正在被重置。",
+            "reversibility": "low",
+            "transmission_channels": [
+              "制裁与反制裁的制度化",
+              "跨境支付与清算规则调整",
+              "主权资产可得性与冻结风险",
+              "能源与大宗商品合同执行环境",
+              "跨国企业合规与退出机制"
+            ]
+          },
+          {
+            "event": "前 30 天内，美/英已开始制裁俄罗斯精英及部分银行，OFAC SDN 30 日新增 8 条。",
+            "institutional_shift": "美国主导的金融制裁工具从常规执法进一步向地缘政治惩罚工具倾斜，显示美元结算体系的可武器化门槛继续下降，且针对个人、机构与金融中介的连带约束在加强。",
+            "reversibility": "medium",
+            "transmission_channels": [
+              "银行对应关系重估",
+              "美元清算可达性",
+              "合规成本上升",
+              "资本流动限制",
+              "储备资产配置调整"
+            ]
+          },
+          {
+            "event": "前 30 天内，主要央行发生 2 次重要动作，且 7 日内地缘政治风险显著上冲。",
+            "institutional_shift": "央行与金融当局在高通胀与地缘冲击并存下被迫进入更强的危机协同模式，货币政策独立性并未被直接取消，但政策空间开始被外部安全冲击与市场稳定压力共同挤压。",
+            "reversibility": "medium",
+            "transmission_channels": [
+              "政策预期再定价",
+              "流动性安排",
+              "金融稳定工具使用",
+              "跨境资本避险行为",
+              "储备管理策略"
+            ]
+          }
+        ],
+        "ongoing_structural": [
+          "美元国际储备占比: 高位主导 (0.59), 仍是核心储备与制裁载体",
+          "美元在贸易计价中的占比: 高位主导 (0.58), 商品与跨境合同仍深度美元化",
+          "SWIFT 跨境支付占比: 准垄断级 (0.99), 网络效应极强但也意味着节点式施压能力极高",
+          "武器化金融工具月均使用次数: 上升期 (1.5), 金融制裁正从例外工具向常态化政策选项移动",
+          "美联储 CBI 指数: 较高独立性 (7.0), 但在高通胀和外部冲击下政治约束上升",
+          "美国财政赤字/GDP: 高赤字常态 (0.085), 公共债务/GDP: 高位 (1.2), 财政约束与安全支出压力并存",
+          "全球央行年购金量: 高位 (650 吨), 反映对储备多元化与主权风险对冲的持续需求",
+          "双边本币结算占比: 中低位推进 (0.25), 去美元化更多表现为边际替代而非体系替换",
+          "中美 CINC 比: 追赶阶段 (1.2), 大国竞争加剧制度性阵营化压力",
+          "GPR 12 月滚动均值: 偏高但非极端 (2.0), 近期出现短促跃升",
+          "全球美元体系仍具路径依赖优势，但其作为中性公共品的声誉开始被安全化使用侵蚀"
+        ],
+        "reasoning": "从 North 的角度看，眼前最重要的不是“冲突会不会扩大”，而是规则属性已经改变：主权承认、金融制裁、银行中介义务与跨境支付准入正在从技术性规则转为安全性规则。制度一旦被安全化，参与者对未来执行环境的预期会改变，合同、储备和结算安排都会开始为“可冻结、可排除、可断链”做准备。这类变化通常不是一次性冲击，而是把原本低频使用的权力工具嵌入常规治理框架，具有明显路径依赖。\n\n从 Acemoglu-Robinson 的框架看，这里呈现的是一种典型的“攫取性工具强化”：强国通过金融网络与制裁体系把外部约束转化为政策杠杆，短期内提高了执行能力，但也会刺激其他国家寻找替代制度接口，例如本币结算、黄金配置、区域支付网络和储备多元化。也就是说，事件本身并不只是惩罚单一目标国，更是在重塑其他国家对美元体系中立性的判断；这会不会演变成更持久的制度分化，取决于后续是否出现更广泛的联盟复制和正式规则化，而不只是临时性惩罚。\n\n从 Olson 的视角看，当前关键在于利益集团的重新结盟：美国国内的安全部门、财政/执法机构、部分金融合规行业与盟友协调机制，都会因制裁工具的扩张而获得组织收益；与此同时，被制裁对象、国际银行中介、跨国企业与依赖能源和金融稳定的行业则面临更高的协调成本。只要这些组织收益大于分散损失，制度就不容易回撤。相反，若未来制裁溢出过大、盟友分歧增大或金融网络成本显著上升，才可能出现对武器化门槛的重新设限。就目前快照而言，更像是一次把既有工具推向常态化的节点，而不是一次可轻易逆转的短期政治表演。",
+        "what_could_be_wrong": "我最可能错在把当前的危机升级误读为长期制度重构，而实际上部分变化只是一次高烈度事件窗下的临时政策反应。"
+      },
+      "canon_anchors": [
+        {
+          "work": "North 1990",
+          "chapter": "ch.10 International Institutional Change",
+          "concept": "规则的国际化与去美元化压力",
+          "concept_en": "international institutional change — weaponization of reserve currency triggers de-dollarization pressure; SWIFT neutrality broken",
+          "why_relevant": "俄央行储备冻结 = 国际金融规则被武器化, SWIFT 中立性破灭"
+        },
+        {
+          "work": "Olson 1965",
+          "chapter": "ch.4 Large vs Small Group Coalitions",
+          "concept": "制裁联盟成本 — G7 vs 全球南方",
+          "concept_en": "sanctions coalition costs — G7 small-group cooperation versus Global South free-riding (Olson coalition sizing)",
+          "why_relevant": "西方联盟集中行动 vs 全球分散反应 = Olson 联盟规模理论"
+        },
+        {
+          "work": "Acemoglu NBER (Reversal of Fortune 2002)",
+          "concept": "资源经济体在制度冲击下的脆弱性",
+          "concept_en": "vulnerability of resource-extractive economies under institutional shock; reversal of fortune via sanctions",
+          "why_relevant": "俄罗斯石油经济+攫取性制度 = Acemoglu 模型预测的脆弱性"
+        },
+        {
+          "work": "Dixit 2004",
+          "chapter": "ch.5 Alternative Governance Modes",
+          "concept": "非国家武器化金融 (SWIFT 切断, 储备冻结)",
+          "concept_en": "weaponized financial infrastructure as alternative governance — SWIFT cutoff and central-bank reserve freeze as state-coercive tools",
+          "why_relevant": "金融基础设施成为政治工具 = Dixit 'alternative governance' 反面应用"
+        }
+      ],
+      "fabrication_blocklist": [
+        "Bakhmut battle (2022-05+)",
+        "G7 oil price cap (2022-12)",
+        "Wagner mutiny (2023-06)",
+        "任何 2022-02-23 之后才发生的事件"
+      ],
+      "scoring_notes": "政治派该抓的核心: (a) 普京承认 DPR/LPR=主权重划信号; (b) 西方预先制裁=承诺锁定; (c) GPR 7日内显著上冲=战争前夜典型. 易遗漏盲区: 政治派可能聚焦战争本身, 忽略储备冻结的制度突破性 — 这是首次系统性 G7 联合储备武器化, 比禁运、制裁更具有 international institutional change 意义 (North 视角).",
+      "machine_baseline_v0_5_6": {
+        "source": "then_vs_now.json pass2_revised political_brief, 2026-05-20 跑",
+        "_note": "ideal_brief 直接用此 baseline; 后续如发现召回更完整版本可手工增补"
+      }
+    }
+  ]
+}

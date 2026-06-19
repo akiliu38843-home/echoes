@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>历史回响 · Echoes</title>
+<meta name="description" content="历史回响 Echoes — 不预测涨跌，找结构上最像的历史时刻，翻译成对今天生活 6 个维度的影响。">
+<!-- 字体：原型用 Noto Serif/Sans SC。生产建议自托管；此处用 CDN + 系统字体兜底（离线/被墙仍可读）。 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  @keyframes ec-draw { from { stroke-dashoffset: 560; } to { stroke-dashoffset: 0; } }
+  @keyframes ec-place { 0% { opacity: 0; transform: translateY(-180px); } 68% { opacity: 1; transform: translateY(6px); } 84% { transform: translateY(-2px); } 100% { opacity: 1; transform: translateY(0); } }
+  @keyframes ec-appear { to { opacity: 1; } }
+  @keyframes ec-hooklift { 0% { transform: translateY(0); } 45% { transform: translateY(22px); } 70% { transform: translateY(22px); } 100% { transform: translateY(0); } }
+  @keyframes ec-trolley { 0% { transform: translateX(0); } 45% { transform: translateX(-58px); } 72% { transform: translateX(-58px); } 100% { transform: translateX(0); } }
+  @keyframes ec-swing { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
+  @keyframes ec-sweep { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(7deg); } }
+  @keyframes ec-spark { 0% { opacity: 0; transform: scale(0.2); } 25% { opacity: 0.9; } 100% { opacity: 0; transform: scale(2); } }
+  @keyframes ec-ping { 0% { opacity: 0.5; transform: scale(0.5); } 70% { opacity: 0; } 100% { opacity: 0; transform: scale(2.5); } }
+  @keyframes ec-stamp { 0% { opacity: 0; transform: scale(1.5) rotate(-11deg); } 55% { opacity: 1; transform: scale(0.93) rotate(3deg); } 78% { transform: scale(1.05) rotate(-1deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+  @keyframes ec-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.18; } }
+  @keyframes ec-fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes ec-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+  @keyframes ec-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes ec-inL { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: none; } }
+  @keyframes ec-inR { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: none; } }
+  @keyframes ec-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: none; } }
+  @keyframes ec-drop { from { transform: translateX(-0.5px) scaleY(0); } to { transform: translateX(-0.5px) scaleY(1); } }
+  @keyframes ec-beat { 0%, 100% { transform: rotate(45deg) scale(1); opacity: 1; } 50% { transform: rotate(45deg) scale(1.55); opacity: 0.45; } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition-duration: 0.001ms !important; }
+  }
+  html, body { margin: 0; padding: 0; }
+  body { background: #d8dde1; -webkit-font-smoothing: antialiased; }
+  * { box-sizing: border-box; }
+
+  /* 交互态（原型的 style-hover/focus → 真 CSS） */
+  .ec-feedcard { transition: transform .16s ease, background .16s ease, border-color .16s ease, box-shadow .16s ease; }
+  .ec-feedcard:hover { background: var(--ec-surface2) !important; border-color: var(--ec-ink3) !important; transform: translateY(-2px); box-shadow: 0 5px 16px rgba(27,38,46,0.09); }
+  .ec-btn-dark:hover { opacity: .86; }
+  .ec-btn-red:hover { opacity: .88; }
+  .ec-heatbtn:hover, .ec-backbtn:hover, .ec-tonebtn:hover { background: var(--ec-line2) !important; }
+  .ec-cardhead { transition: background .16s ease; }
+  .ec-cardhead:hover { background: var(--ec-surface2); }
+  .ec-input:focus { border-color: var(--ec-ink3) !important; }
+  .ec-term { border-bottom: 1px dotted #9c3a2c; cursor: help; color: inherit; }
+  /* a11y：键盘焦点可见 */
+  a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2px solid #9c3a2c; outline-offset: 2px; }
+  button { font: inherit; }
+</style>
+</head>
+<body>
+<div id="app" role="main"></div>
+<div id="gloss-pop" role="tooltip" aria-hidden="true" style="display:none"></div>
+
+<!-- 部署配置：本地 / 后端同源部署留空；前端单独上 Vercel 时填 Render 后端地址，
+     例如 apiBase: "https://echoes-api.onrender.com" -->
+<script>window.ECHOES_CONFIG = { apiBase: "" };</script>
+
+<script>
+"use strict";
+const API_BASE = (window.ECHOES_CONFIG && window.ECHOES_CONFIG.apiBase) || "";
+// ─────────────────────────────────────────────────────────────
+// 历史回响 Echoes — 生产前端（原生 JS 单文件，无框架，零构建）
+// 还原 design 原型；接真实 API：/api/trending /api/glossary /api/life-report /api/heat
+// ─────────────────────────────────────────────────────────────
+
+// ── 常量（design token） ──────────────────────────────────────
+const TONES = {
+  '档案暖': { bg:'#e8dfcc', surface:'#f8f3e8', surface2:'#fbf7ee', ink:'#211c15', ink2:'#514838', ink3:'#75694f', ink4:'#9b8d70', line:'#d8cdb2', line2:'#e6dcc4' },
+  '冷灰':   { bg:'#d8dde1', surface:'#eef1f3', surface2:'#f6f8f9', ink:'#1b2329', ink2:'#3b464d', ink3:'#65707a', ink4:'#96a1aa', line:'#c6ced4', line2:'#dde2e6' },
+  '亮白':   { bg:'#efece4', surface:'#ffffff', surface2:'#fbfaf6', ink:'#1a1a17', ink2:'#43423c', ink3:'#6e6c62', ink4:'#9c998b', line:'#e2ddd0', line2:'#efece1' },
+};
+const TONE_NAMES = ['冷灰','档案暖','亮白'];
+const RED = '#9c3a2c';
+const DIM_META = {
+  wallet:{label:'钱包',color:'#5f7a5a'}, job:{label:'饭碗',color:'#4f6a86'}, social:{label:'人际',color:'#9a5a4d'},
+  identity:{label:'认同',color:'#917a47'}, power:{label:'规则',color:'#6d5f86'}, tempo:{label:'节奏',color:'#4c7a78'},
+};
+const DIM_ORDER = ['wallet','job','social','identity','power','tempo'];
+const DISC = { history:'#4f6a86', economics:'#5f7a5a', politics:'#6d5f86', sociology:'#9a5a4d', anthropology:'#917a47', intl_relations:'#8a5566', central_brain:'#5c6470' };
+const EV = { data:['有数据','#4f7a43','#e7eede'], school:['推断','#6b5391','#ece8f2'], history:['史鉴','#9a6a2f','#f1e9d6'] };
+const BUILD_STEPS = ['测绘放线 · 校准坐标','基础桩基 · 历史结构','钢结构骨架 · 经济','楼板吊装 · 政治','围护与脚手 · 社会','结构封顶 · 文化 / 综合研判'];
+const LENS_DISC = {
+  long_durée_structural:'history', contingency_narrative:'history',
+  austrian:'economics', monetarist:'economics', keynesian:'economics', rational_expectations:'economics',
+  institutional_pe:'politics',
+  structural_functional:'sociology', conflict_theory:'sociology',
+  cultural_values:'anthropology', interpretive_structural:'anthropology',
+  realist_power_transition:'intl_relations', liberal_institutionalism:'intl_relations', realist:'intl_relations', liberal:'intl_relations',
+  central_brain:'central_brain',
+};
+function lensToDisc(id){ return LENS_DISC[id] || 'central_brain'; }
+
+// ── 状态 ──────────────────────────────────────────────────────
+const state = {
+  screen: 'feed',          // feed | report | debate
+  events: [], live: false,
+  report: null, expanded: null,
+  heat: {},                // idx → {open, loading, pts}
+  loading: false, loadingLabel: '', buildStep: 0,
+  error: null, lastEvent: null,
+  gloss: null,
+  tone: (function(){ try { return localStorage.getItem('ec-tone') || '冷灰'; } catch(e){ return '冷灰'; } })(),
+  customText: '',
+  latin: true,
+};
+let GLOSSARY = null, MATCHER = [];
+let _stepTimer = null, _heatSeq = Promise.resolve();
+
+// ── 工具 ──────────────────────────────────────────────────────
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function clampInt(v,lo,hi){ v = parseInt(v,10); if(isNaN(v)) v=lo; return Math.max(lo,Math.min(hi,v)); }
+function pad2(n){ return String(n).padStart(2,'0'); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function shortDate(s){ try{ const d=new Date(s); if(!isNaN(d)) return (d.getMonth()+1)+'/'+d.getDate(); }catch(e){} return String(s||'').slice(0,16); }
+
+async function fetchJSON(url, opts, timeoutMs){
+  const ctrl = new AbortController();
+  const t = setTimeout(()=>ctrl.abort(), timeoutMs||20000);
+  try {
+    const res = await fetch(url, Object.assign({ signal: ctrl.signal }, opts||{}));
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    return await res.json();
+  } finally { clearTimeout(t); }
+}
+
+// ── 自绘图标（线性几何，1.6px 描边）→ SVG 字符串 ──────────────
+function svgWrap(inner, color, size, sw){
+  return `<svg width="${size}" height="${size}" viewBox="0 0 20 20" fill="none" stroke="${color}" stroke-width="${sw||1.6}" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:0 0 auto" aria-hidden="true">${inner}</svg>`;
+}
+function dimIcon(key, color, size){
+  let p;
+  switch(key){
+    case 'wallet':   p = `<rect x="3" y="5.5" width="14" height="10" rx="1.8"/><path d="M3 8.5 H17"/><circle cx="13.5" cy="12" r="1" fill="${color}" stroke="none"/>`; break;
+    case 'job':      p = `<path d="M3.5 9 A6.5 6.5 0 0 0 16.5 9 Z"/><path d="M2.5 9 H17.5"/><path d="M10 3 V4.6"/>`; break;
+    case 'social':   p = `<circle cx="7.5" cy="10" r="3.7"/><circle cx="12.5" cy="10" r="3.7"/>`; break;
+    case 'identity': p = `<rect x="4" y="4" width="12" height="12" rx="2"/><circle cx="10" cy="8.4" r="1.8"/><path d="M6.9 14 A3.4 3.4 0 0 1 13.1 14"/>`; break;
+    case 'power':    p = `<path d="M3.5 8 L10 4 L16.5 8"/><path d="M5.6 8.5 V14.5 M10 8.5 V14.5 M14.4 8.5 V14.5"/><path d="M3.5 15.5 H16.5"/>`; break;
+    case 'tempo':    p = `<path d="M5 4 H15 L10 10 Z"/><path d="M5 16 H15 L10 10 Z"/>`; break;
+    default:         p = `<circle cx="10" cy="10" r="6"/>`;
+  }
+  return svgWrap(p, color, size||18, 1.6);
+}
+function evIcon(tag, color, size){
+  let p;
+  switch(tag){
+    case 'data':    p = `<path d="M4 16 H16"/><path d="M6.5 16 V11"/><path d="M10 16 V5.5"/><path d="M13.5 16 V9"/>`; break;
+    case 'history': p = `<path d="M4 6 H16"/><path d="M4 10 H14"/><path d="M4 14 H11.5"/>`; break;
+    default:        p = `<circle cx="10" cy="10" r="6"/><path d="M10 5 L12 10 L10 15 L8 10 Z"/>`;
+  }
+  return svgWrap(p, color, size||12, 1.7);
+}
+function evInfo(tag){ const t = EV[tag]||EV.school; return { iconEl: evIcon(EV[tag]?tag:'school', t[1], 12), label:t[0], fg:t[1], bg:t[2] }; }
+
+// ── 名词释义：把正文文本 → 带 .ec-term 的 HTML（每词全篇首现一次） ──
+function termify(text){
+  if(!text) return '';
+  if(!MATCHER.length) return esc(text);
+  const used = new Set(); let out = ''; let i = 0;
+  while(i < text.length){
+    let best=null, bi=Infinity;
+    for(const t of MATCHER){ if(used.has(t.std)) continue; const idx=text.indexOf(t.match,i); if(idx!==-1 && idx<bi){ bi=idx; best=t; } }
+    if(!best){ out += esc(text.slice(i)); break; }
+    used.add(best.std);
+    if(bi>i) out += esc(text.slice(i,bi));
+    out += `<span class="ec-term" data-action="term" data-std="${esc(best.std)}" tabindex="0" role="button">${esc(text.slice(bi,bi+best.match.length))}</span>`;
+    i = bi + best.match.length;
+  }
+  return out;
+}
+
+// ── 热度 sparkline ────────────────────────────────────────────
+function sparklineSVG(pts){
+  const vals = pts.map(p=>p.value||0);
+  const max = Math.max.apply(null, vals.concat([1])), min = Math.min.apply(null, vals);
+  const W=168, H=34, n=vals.length;
+  const coords = vals.map((v,i)=>{ const x=(i/(n-1))*W; const y=H-((v-min)/((max-min)||1))*(H-6)-3; return x.toFixed(1)+','+y.toFixed(1); }).join(' ');
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block" aria-hidden="true"><polyline points="${coords}" fill="none" stroke="${RED}" stroke-width="1.5"/></svg>`;
+}
+function trendHTML(pts){
+  const v = pts.map(p=>p.value||0), half=Math.floor(v.length/2);
+  const early=v.slice(0,half).reduce((a,b)=>a+b,0)/(half||1), late=v.slice(half).reduce((a,b)=>a+b,0)/((v.length-half)||1);
+  let txt='→ 平稳', col='#75694f';
+  if(late>early*1.3){ txt='↑ 发酵中'; col='#a8443a'; } else if(late<early*0.7){ txt='↓ 降温中'; col='#4f7a43'; }
+  return `<span style="font-family:ui-monospace,'SF Mono',monospace;font-size:11px;color:${col};font-weight:600">${txt}</span>`;
+}
+
+// ── data_anchors 渲染（契约 v2 = 对象数组；兼容历史字符串） ──────
+function anchorText(a){
+  if(typeof a === 'string') return a;
+  if(a && typeof a === 'object'){ const head=[a.country,a.indicator].filter(Boolean).join('·'); return head + (a.value?(head?' ':'')+a.value:''); }
+  return '';
+}
+
+// ── 施工蓝图 loading 场景（SVG 字符串） ───────────────────────
+function buildScene(){
+  const INK='#3f474e', FAINT='#9aa3ab', WIN='#c6cdd3', DARK='#2c333a';
+  const G=200, TOP=44, COLS=[100,132,164];
+  const lvl = L => G-26*L;
+  const TX0=COLS[0], TX1=COLS[2], TW=TX1-TX0, CX=(TX0+TX1)/2;
+  const draw=(d,du)=>`stroke-dasharray:560;animation:ec-draw ${du||0.55}s ease ${d}s both`;
+  const appear=(d,du)=>`animation:ec-appear ${du||0.35}s ease ${d}s both`;
+  const place=d=>`animation:ec-place 0.7s cubic-bezier(.2,.85,.3,1.15) ${d}s both`;
+  const mono=s=>`font-family:ui-monospace,'SF Mono',monospace;font-size:${s||7.5}px;letter-spacing:0.04em`;
+  const P=(d,stroke,w,style)=>`<path d="${d}" stroke="${stroke}" stroke-width="${w}"${style?` style="${style}"`:''}/>`;
+  let s='';
+  const crop=(x,y,dx,dy)=>{ s+=P(`M${x} ${y} h${dx}`,INK,1,'opacity:0.6'); s+=P(`M${x} ${y} v${dy}`,INK,1,'opacity:0.6'); };
+  crop(6,6,14,14); crop(284,6,-14,14); crop(6,246,14,-14); crop(284,246,-14,-14);
+  s+=`<text x="282" y="16" text-anchor="end" fill="${FAINT}" style="${mono(7.5)};${appear(0.25)}">SECT. B–B</text>`;
+  s+=`<text x="282" y="242" text-anchor="end" fill="${FAINT}" style="${mono(7.5)};${appear(2.9)}">SCALE 1:200</text>`;
+  // north compass
+  s+=`<g style="${appear(0.15)}"><circle cx="26" cy="32" r="8" fill="none" stroke="${FAINT}" stroke-width="1"/>${P('M26 38 L26 24 L23 29 M26 24 L29 29',FAINT,1)}<text x="26" y="18" text-anchor="middle" fill="${FAINT}" style="${mono(7)}">N</text></g>`;
+  // ground + hatch + piles
+  s+=P(`M30 ${G} H262`,INK,1.6,draw(0.05,0.75));
+  for(let i=0;i<12;i++) s+=P(`M${48+i*17} ${G} l-6 8`,FAINT,1,draw(0.1+i*0.02,0.4));
+  COLS.forEach((x,i)=>{ s+=P(`M${x} ${G} V${G+18}`,INK,1.4,draw(0.22+i*0.06,0.4)); s+=P(`M${x-6} ${G+18} H${x+6}`,FAINT,1,draw(0.32+i*0.06,0.3)); });
+  // skeleton: columns + beams + bracing + rivets/sparks
+  COLS.forEach((x,i)=> s+=P(`M${x} ${G} V${TOP}`,INK,1.6,draw(0.4+i*0.08,0.85)));
+  for(let L=1;L<=6;L++) s+=P(`M${TX0} ${lvl(L)} H${TX1}`,INK,1.5,draw(0.55+L*0.12,0.5));
+  s+=P(`M${COLS[0]} ${lvl(0)} L${COLS[1]} ${lvl(2)}`,FAINT,1.1,draw(1.0,0.4));
+  s+=P(`M${COLS[1]} ${lvl(0)} L${COLS[0]} ${lvl(2)}`,FAINT,1.1,draw(1.05,0.4));
+  COLS.forEach((x,i)=>{ for(let L=0;L<=6;L++){ const rd=0.7+L*0.1;
+    s+=`<rect x="${x-2.3}" y="${lvl(L)-2.3}" width="4.6" height="4.6" fill="${INK}" transform="rotate(45 ${x} ${lvl(L)})" style="${appear(rd)}"/>`;
+    s+=`<circle cx="${x}" cy="${lvl(L)}" r="4.5" fill="none" stroke="${RED}" stroke-width="1.2" style="transform-box:fill-box;transform-origin:center;animation:ec-spark 0.55s ease ${rd}s both"/>`; } });
+  // floor cladding
+  for(let L=1;L<=6;L++){ const top=lvl(L)+2;
+    s+=`<g style="${place(1.05+L*0.16)}"><rect x="${TX0+4}" y="${top}" width="${TW-8}" height="22" fill="rgba(255,255,255,0.5)" stroke="${INK}" stroke-width="1.3"/><rect x="${TX0+10}" y="${top+7}" width="12" height="8" fill="${WIN}"/><rect x="${TX0+26}" y="${top+7}" width="12" height="8" fill="${WIN}"/><rect x="${TX0+42}" y="${top+7}" width="12" height="8" fill="${WIN}"/></g>`; }
+  // roof + beacon + ping
+  s+=`<g style="${place(2.55)}"><polygon points="${TX0} ${TOP} ${TX1} ${TOP} ${CX} ${TOP-18}" fill="rgba(255,255,255,0.5)" stroke="${INK}" stroke-width="1.5"/></g>`;
+  s+=`<g style="animation:ec-appear 0.3s ease 2.8s both, ec-blink 1.7s ease-in-out 3.1s infinite">${P(`M${CX} ${TOP-18} V${TOP-30}`,INK,1.2)}<rect x="${CX-5}" y="${TOP-35}" width="10" height="10" fill="${RED}" transform="rotate(45 ${CX} ${TOP-30})"/></g>`;
+  s+=`<circle cx="${CX}" cy="${TOP-30}" r="8" fill="none" stroke="${RED}" stroke-width="1.2" style="transform-box:fill-box;transform-origin:center;animation:ec-ping 2.4s ease-out 3.2s infinite"/>`;
+  // scaffold
+  let sc=P('M86 '+G+' V'+lvl(6),FAINT,1)+P('M96 '+G+' V'+lvl(6),FAINT,1);
+  for(let L=0;L<=6;L++) sc+=P(`M86 ${lvl(L)} H96`,FAINT,1);
+  for(let L=1;L<=6;L++) sc+=P(`M86 ${lvl(L)} L96 ${lvl(L-1)}`,FAINT,0.8);
+  for(let L=1;L<=6;L++) sc+=P(`M96 ${lvl(L)} H${TX0}`,FAINT,0.8);
+  s+=`<g style="${appear(1.35,0.7)}">${sc}</g>`;
+  // tower crane
+  const M0=224,M1=234,MT=34,JT=38,JB=50,JEND=108,CEND=256,CAT=(M0+M1)/2;
+  let cr=P(`M${M0} ${G} V${MT}`,INK,1.5)+P(`M${M1} ${G} V${MT}`,INK,1.5);
+  for(let y=G;y>=MT+12;y-=16) cr+=P(`M${M0} ${y} H${M1}`,FAINT,0.9);
+  let zig=''; for(let y=G;y>MT;y-=16) zig+=`M${M0} ${y} L${M1} ${y-16} `; cr+=P(zig,FAINT,0.8);
+  cr+=P(`M${M0} ${MT} L${CAT} ${MT-14} L${M1} ${MT}`,INK,1.3);
+  cr+=P(`M${M1} ${JT} H${JEND}`,INK,1.4)+P(`M${M0} ${JB} H${JEND+4}`,INK,1.2)+P(`M${JEND} ${JT} L${JEND+4} ${JB}`,INK,1.2);
+  let jz=''; for(let x=M0;x>JEND;x-=16) jz+=`M${x} ${JB} L${x-16} ${JT} `; cr+=P(jz,FAINT,0.8);
+  cr+=P(`M${M0} ${JT} H${CEND}`,INK,1.4)+P(`M${M1} ${JB} H${CEND}`,INK,1.2);
+  cr+=`<rect x="${CEND-16}" y="${JT+2}" width="16" height="16" fill="${DARK}"/>`;
+  cr+=P(`M${CAT} ${MT-14} L${JEND+6} ${JT}`,FAINT,0.9)+P(`M${CAT} ${MT-14} L${CEND-4} ${JT}`,FAINT,0.9);
+  s+=`<g style="${appear(0.1,0.6)}">${cr}</g>`;
+  s+=`<g style="animation:ec-appear 0.3s ease 0.7s both, ec-trolley 3.4s ease-in-out 1.0s infinite"><rect x="190" y="46" width="12" height="6" fill="${INK}"/><g style="animation:ec-hooklift 3.4s ease-in-out 1.0s infinite">${P('M196 52 V150',INK,1.1)}${P('M192 150 H200',INK,1.1)}<rect x="188" y="150" width="16" height="9" fill="${RED}" style="transform-box:fill-box;transform-origin:50% 0;animation:ec-swing 2.6s ease-in-out infinite"/></g></g>`;
+  // theodolite + sightline
+  const IX=44,IY=150;
+  s+=`<g style="${appear(0.3,0.5)}">${P(`M${IX} ${IY} L34 ${G}`,INK,1.2)}${P(`M${IX} ${IY} L54 ${G}`,INK,1.2)}${P(`M${IX} ${IY} L${IX} ${G}`,FAINT,1)}<rect x="${IX-6}" y="${IY-7}" width="12" height="8" fill="none" stroke="${INK}" stroke-width="1.2"/>${P(`M${IX+6} ${IY-4} H${IX+13}`,INK,1.4)}</g>`;
+  s+=`<g style="transform-box:fill-box;transform-origin:0% 100%;animation:ec-appear 0.4s ease 2.7s both, ec-sweep 4s ease-in-out 3.0s infinite">${P(`M${IX+13} ${IY-4} L98 ${lvl(3)}`,FAINT,1,'stroke-dasharray:3 3')}</g>`;
+  // dimension lines
+  s+=`<g style="${appear(2.65)}">${P(`M74 ${TOP} V${G}`,FAINT,1)}${P(`M70 ${TOP} H78 M70 ${G} H78`,FAINT,1)}<polygon points="74 ${TOP} 71 ${TOP+7} 77 ${TOP+7}" fill="${FAINT}"/><polygon points="74 ${G} 71 ${G-7} 77 ${G-7}" fill="${FAINT}"/><text x="68" y="${(TOP+G)/2+3}" text-anchor="end" fill="${FAINT}" style="${mono(7.5)}">H</text></g>`;
+  s+=`<g style="${appear(2.65)}">${P(`M${TX0} 226 H${TX1}`,FAINT,1)}${P(`M${TX0} 222 V230 M${TX1} 222 V230`,FAINT,1)}<polygon points="${TX0} 226 ${TX0+7} 223 ${TX0+7} 229" fill="${FAINT}"/><polygon points="${TX1} 226 ${TX1-7} 223 ${TX1-7} 229" fill="${FAINT}"/><text x="${CX}" y="238" text-anchor="middle" fill="${FAINT}" style="${mono(7.5)}">W</text></g>`;
+  // topping-out seal
+  const SX=50,SY=104;
+  s+=`<g style="transform-box:fill-box;transform-origin:center;animation:ec-stamp 0.6s cubic-bezier(.2,.8,.3,1.2) 3.05s both"><circle cx="${SX}" cy="${SY}" r="19" fill="none" stroke="${RED}" stroke-width="1.6"/><circle cx="${SX}" cy="${SY}" r="14" fill="none" stroke="${RED}" stroke-width="0.7" stroke-dasharray="2 2.5"/><text x="${SX}" y="${SY-1}" text-anchor="middle" fill="${RED}" style="font-family:'Noto Serif SC',serif;font-weight:900;font-size:11px">封顶</text><text x="${SX}" y="${SY+9}" text-anchor="middle" fill="${RED}" style="${mono(4.6)};letter-spacing:0.1em">TOPPED OUT</text></g>`;
+  return `<svg width="100%" viewBox="0 0 290 252" fill="none" stroke-linecap="round" stroke-linejoin="round" style="display:block;overflow:visible">${s}</svg>`;
+}
+
+// ── 视图模型 ──────────────────────────────────────────────────
+function vmEvents(){
+  const evs = state.events || [];
+  const ordered = evs.slice().sort((a,b)=> DIM_ORDER.indexOf(a.primary||'power') - DIM_ORDER.indexOf(b.primary||'power'));
+  return ordered.map((ev,n)=>{
+    const realIdx = evs.indexOf(ev);
+    const pm = DIM_META[ev.primary] || DIM_META.power;
+    const chips = (ev.dimensions || [ev.primary]).filter(Boolean).map(d=>{ const m=DIM_META[d]||DIM_META.power; return { iconEl: dimIcon(d,'#ffffff',13), label:m.label, color:m.color }; });
+    return { realIdx, no:pad2(n+1), enter:`ec-rise 0.5s ease ${(0.05*n).toFixed(2)}s both`,
+      blurb: ev.blurb || ev.title || '', title: ev.title||'', hasBlurb: !!ev.blurb,
+      source: ev.source||'', date: ev.published?shortDate(ev.published):(ev.as_of||''), primaryColor: pm.color, chips };
+  });
+}
+function vmReport(){
+  const r = state.report; if(!r) return null;
+  const echo = r.echo || {};
+  const ym = (echo.historical_label||'').match(/(\d{3,4})\s*年/); const year = ym?ym[1]:'';
+  const breakdown = (echo.similarity_breakdown||[]).map(d=>({ dim:d.dimension||'', score:clampInt(d.score,0,100), note:d.note||'' }));
+  const mapping = (echo.structural_mapping||[]).map(m=>({ element:m.element||'', then:m.then||'', now:m.now||'', note:m.note||'', ev:evInfo(m.evidence_tag) }));
+  const otherEchoes = (echo.other_echoes||[]).map(e=>({ label:e.label||'', sim:e.similarity||'?' }));
+  const degraded = (r.status==='degraded') || !!echo._degraded || (Number(echo.similarity)===0 && breakdown.length===0);
+  const failReason = ((r.cards||[]).find(c=>c.confidence_note && /失败|超时|不可用/.test(c.confidence_note))||{}).confidence_note || '会诊服务超时';
+  const cards = (r.cards||[]).map((c,i)=>{
+    const key = c.key||('c'+i);
+    const chain = (c.causal_chain||[]).map((s,j)=>({ num:s.step||j+1, cause:s.cause||'', effect:s.effect||'', mech:s.mechanism||'', ground:s.grounding||'' }));
+    const byCountry = (c.by_country||[]).filter(x=>x).map(bc=>({ country:bc.country, impact:bc.impact }));
+    const anchors = (c.data_anchors||[]).map(anchorText).filter(Boolean);
+    const dimColor = (DIM_META[key]||DIM_META.power).color;
+    const cardDegraded = degraded || (!c.why && chain.length===0 && !c.tldr);
+    return { key, no:pad2(i+1), title:c.title||'', dimColor, iconEl:dimIcon(key,dimColor,18),
+      ev:evInfo(c.evidence_tag), tldr:c.tldr||'', headline:c.headline||(cardDegraded?'（分析暂时不可用）':''),
+      horizon:c.horizon||'', confPct:Math.round((c.confidence||0)*100), confNote:c.confidence_note||'',
+      whyHTML:termify(c.why||''), hasWhy:!!c.why, chain, byCountry, then:c.then||'', anchors,
+      degraded:cardDegraded, failNote:c.confidence_note||'会诊未完成' };
+  });
+  return { presentLabel: echo.present_label||(r.event&&r.event.text)||'', historicalLabel: echo.historical_label||'', year,
+    similarity: echo.similarity||0, breakdown, mapping, otherEchoes,
+    whyStructuralHTML: termify(echo.why_structural||''), whyNot: echo.why_not_obvious||'',
+    uncertainty: (r.meta&&r.meta.uncertainty_note)||'本报告是结构类比与多学派叙事，非投资建议，非未来预测（21-ADR）',
+    audience: r.audience||'中国', degraded,
+    degradedNote: '本次会诊未能生成结构匹配与维度翻译（'+failReason+'）。可用部分仍照常显示。', cards };
+}
+function vmDebate(){
+  const r = state.report; if(!r) return null;
+  const d = r.debate||{}, meta = r.meta||{};
+  return { question: d.question||'这件事会怎样影响普通人？',
+    voices: (d.voices||[]).map((v,i)=>{ const disc=lensToDisc(v.lens||''); const L=i%2===0; const color=DISC[disc]||DISC.central_brain;
+      return { no:pad2(i+1), L, color, label:v.label_zh||v.lens||'', stanceHTML:termify(v.stance||''), anchor:v.data_anchor||'',
+        enter:`${L?'ec-inL':'ec-inR'} 0.55s cubic-bezier(.2,.8,.3,1) ${(0.09*i).toFixed(2)}s both` }; }),
+    voiceCount:(d.voices||[]).length, crux:d.crux||'',
+    synthesisHTML: meta.synthesis_zh?termify(meta.synthesis_zh):'', disclaimer:meta.disclaimer||'', uncertainty:meta.uncertainty_note||'' };
+}
+
+// ── 渲染：各屏 → HTML 字符串 ──────────────────────────────────
+function mono(size, extra){ return `font-family:ui-monospace,'SF Mono',monospace;font-size:${size}px;${extra||''}`; }
+function serif(){ return `font-family:'Noto Serif SC',serif`; }
+
+function renderTopbar(){
+  const back = state.screen!=='feed'
+    ? `<button class="ec-backbtn" data-action="back" style="margin-left:auto;cursor:pointer;background:none;border:1px solid var(--ec-line);border-radius:2px;padding:5px 13px;font-size:12px;color:var(--ec-ink2)">← 返回</button>` : '';
+  return `<div style="position:sticky;top:0;z-index:50;background:var(--ec-surface);border-bottom:1px solid var(--ec-line);padding:11px 24px;display:flex;align-items:center;gap:16px">
+    <div data-action="home" style="cursor:pointer;display:flex;align-items:baseline;gap:9px">
+      <span style="width:10px;height:10px;border:1.5px solid ${RED};transform:rotate(45deg) translateY(-1px);display:inline-block"></span>
+      <span style="${serif()};font-weight:900;font-size:18px;letter-spacing:0.02em;color:var(--ec-ink)">历史回响</span>
+      <span style="${mono(10.5,'letter-spacing:0.2em')};color:var(--ec-ink4)">ECHOES</span>
+    </div>
+    <button class="ec-tonebtn" data-action="tone" title="切换纸色" aria-label="切换纸色" style="${state.screen==='feed'?'margin-left:auto;':''}cursor:pointer;background:none;border:1px solid var(--ec-line);border-radius:2px;padding:5px 11px;${mono(11)}color:var(--ec-ink3)">纸色 · ${esc(state.tone)}</button>
+    ${back}
+  </div>`;
+}
+
+function renderFeed(){
+  const evs = vmEvents();
+  const list = evs.length ? evs.map(ev=>{
+    const chips = ev.chips.map(c=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#fff;background:${c.color};border-radius:2px;padding:3px 8px">${c.iconEl}${esc(c.label)}</span>`).join('');
+    const h = state.heat[ev.realIdx]||{};
+    let heatNode='';
+    if(h.open){
+      if(h.loading) heatNode=`<span style="font-size:11px;color:var(--ec-ink4)">正在拉取热度…</span>`;
+      else if(h.pts && h.pts.length>=3) heatNode = sparklineSVG(h.pts)+trendHTML(h.pts);
+      else heatNode=`<span style="font-size:11px;color:var(--ec-ink4)">暂无热度数据（GDELT 限流，可稍后再试）</span>`;
+    }
+    const heatBox = h.open ? `<div style="margin-top:13px;padding-top:12px;border-top:1px dotted var(--ec-line);display:flex;align-items:center;gap:14px;flex-wrap:wrap"><span style="${mono(10,'letter-spacing:0.08em')}color:var(--ec-ink4)">近 14 日新闻热度</span>${heatNode}</div>` : '';
+    return `<div class="ec-feedcard" data-action="analyze" data-idx="${ev.realIdx}" role="button" tabindex="0" style="background:var(--ec-surface);border:1px solid var(--ec-line);border-left:4px solid ${ev.primaryColor};border-radius:2px;padding:15px 20px;margin-bottom:12px;cursor:pointer;animation:${ev.enter}">
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:7px">
+        <span style="${mono(11,'letter-spacing:0.06em')}color:var(--ec-ink4)">No.${ev.no}</span>
+        <span style="margin-left:auto;${mono(11)}color:var(--ec-ink4)">${esc(ev.source)}${ev.source&&ev.date?' · ':''}${esc(ev.date)}</span>
+      </div>
+      <div style="${serif()};font-weight:700;font-size:18px;line-height:1.45;color:var(--ec-ink)">${esc(ev.blurb)}</div>
+      ${ev.hasBlurb?`<div style="font-size:12.5px;color:var(--ec-ink3);margin-top:5px;line-height:1.4">${esc(ev.title)}</div>`:''}
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:13px">
+        ${chips}
+        <button class="ec-heatbtn" data-action="heat" data-idx="${ev.realIdx}" style="margin-left:auto;cursor:pointer;background:none;border:1px solid var(--ec-line);border-radius:2px;padding:2px 9px;${mono(11)}color:var(--ec-ink3)">热度 ›</button>
+      </div>
+      ${heatBox}
+    </div>`;
+  }).join('') : `<div style="color:var(--ec-ink4);font-size:14px;padding:8px 0">${state.eventsLoaded?'暂无热点。可在上方输入框粘贴事件分析。':'正在拉取实时新闻…'}</div>`;
+
+  return `<div style="max-width:840px;margin:0 auto;padding:38px 24px 64px">
+    <div style="border-bottom:3px double var(--ec-ink);padding-bottom:16px;margin-bottom:9px">
+      <div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:10px 14px">
+        <h1 style="margin:0;${serif()};font-weight:900;font-size:clamp(30px,5vw,44px);letter-spacing:0.02em;line-height:1.05;color:var(--ec-ink)">历史影响看板</h1>
+        <span style="${mono(11)}font-weight:600;color:${state.live?'#4f7a43':'#9b8d70'};transform:translateY(-3px)">${state.live?'◆ 实时':'◇ 离线种子'}</span>
+        <span style="margin-left:auto;${mono(11)}color:var(--ec-ink4);align-self:flex-end">第 ${todayISO().replace(/-/g,'·')} 号</span>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:18px">
+      <div style="${mono(10.5,'letter-spacing:0.16em')}color:var(--ec-ink4);max-width:62ch;line-height:1.6">档 · 实时政经新闻 · 按生活维度归档<br>SECT. A — REAL-TIME INDEX / 6-AXIS PROJECTION</div>
+      <div aria-hidden="true" style="position:relative;width:58px;height:58px;flex:0 0 auto">
+        <div style="position:absolute;inset:0;border:1px solid var(--ec-line)"></div>
+        <div style="position:absolute;inset:14px;border:1px solid var(--ec-ink4);transform:rotate(45deg)"></div>
+        <div style="position:absolute;left:0;right:0;top:50%;height:1px;background:var(--ec-line)"></div>
+        <div style="position:absolute;top:0;bottom:0;left:50%;width:1px;background:var(--ec-line)"></div>
+        <div style="position:absolute;left:50%;top:50%;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;background:${RED};transform:rotate(45deg);animation:ec-beat 2.8s ease-in-out infinite"></div>
+      </div>
+    </div>
+    <p style="margin:0 0 28px;${serif()};font-size:16px;line-height:1.75;color:var(--ec-ink2);max-width:62ch">把一件正在发生的事丢进来 —— 系统<strong style="color:var(--ec-ink)">不预测涨跌</strong>，而是找到结构上最像的历史时刻，翻译成对今天普通人 6 个生活维度的影响，再摊开各学派为什么这么判断。</p>
+    <div style="display:flex;gap:12px;margin-bottom:34px;flex-wrap:wrap">
+      <input id="ec-custom" class="ec-input" value="${esc(state.customText)}" placeholder="或粘贴你想分析的事件描述……" aria-label="事件描述" style="flex:1;min-width:220px;font:inherit;font-size:15px;border:1px solid var(--ec-line);background:var(--ec-surface2);border-radius:2px;padding:11px 16px;color:var(--ec-ink);outline:none">
+      <button class="ec-btn-dark" data-action="custom-submit" style="background:var(--ec-ink);color:var(--ec-surface);border:none;border-radius:2px;padding:11px 24px;font-weight:700;font-size:14px;cursor:pointer;${serif()};white-space:nowrap">分析 →</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+      <span style="${mono(11,'letter-spacing:0.14em')}color:var(--ec-ink3)">FIG.01 · 实时热点 · 按生活影响排</span>
+      <span style="flex:1;height:1px;background:var(--ec-line)"></span>
+    </div>
+    ${list}
+  </div>`;
+}
+
+function renderReport(){
+  const r = vmReport(); if(!r) return '';
+  const mirror = r.degraded ? `
+    <div style="position:relative;background:var(--ec-surface);border:1px solid ${RED};border-radius:3px;padding:20px 22px;margin-bottom:18px;animation:ec-rise 0.55s ease both">
+      ${corner(RED)}
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px"><span style="width:8px;height:8px;background:${RED};transform:rotate(45deg);display:inline-block;flex:0 0 auto"></span><span style="${mono(10.5,'letter-spacing:0.14em;text-transform:uppercase')}color:${RED};font-weight:700">会诊未完成 · PARTIAL FAILURE</span></div>
+      <div style="${serif()};font-weight:700;font-size:clamp(18px,2.4vw,22px);line-height:1.35;color:var(--ec-ink);margin-bottom:9px">${esc(r.presentLabel)}</div>
+      <div style="font-size:13px;line-height:1.65;color:var(--ec-ink2);max-width:62ch">${esc(r.degradedNote)}</div>
+    </div>` : renderMirror(r);
+
+  const cards = r.cards.map(card=>renderCard(card)).join('');
+
+  return `<div style="max-width:1040px;margin:0 auto;padding:28px 24px 64px">
+    ${mirror}
+    <div style="background:#f0e4c4;border:1px solid #e0cd9c;border-radius:2px;padding:12px 16px;font-size:13px;color:var(--ec-ink2);line-height:1.55;margin-bottom:26px"><strong style="color:#9a6a14">△ 注意 ·</strong> ${esc(r.uncertainty)}</div>
+    <div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:10px 14px;margin-bottom:16px">
+      <h2 style="margin:0;${serif()};font-weight:900;font-size:22px;color:var(--ec-ink)">6 个生活维度</h2>
+      <span style="${mono(11)}color:var(--ec-ink4)">视角 · ${esc(r.audience)}</span>
+      <button class="ec-btn-red" data-action="show-debate" style="margin-left:auto;background:${RED};color:#fff;border:none;border-radius:2px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;${serif()}">他们怎么看 →</button>
+    </div>
+    ${cards}
+  </div>`;
+}
+
+function corner(c){
+  const s=(pos)=>`<span aria-hidden="true" style="position:absolute;${pos};width:12px;height:12px;border-color:${c}"></span>`;
+  return `<span aria-hidden="true" style="position:absolute;top:8px;left:8px;width:12px;height:12px;border-top:1px solid ${c};border-left:1px solid ${c}"></span>
+  <span aria-hidden="true" style="position:absolute;top:8px;right:8px;width:12px;height:12px;border-top:1px solid ${c};border-right:1px solid ${c}"></span>
+  <span aria-hidden="true" style="position:absolute;bottom:8px;left:8px;width:12px;height:12px;border-bottom:1px solid ${c};border-left:1px solid ${c}"></span>
+  <span aria-hidden="true" style="position:absolute;bottom:8px;right:8px;width:12px;height:12px;border-bottom:1px solid ${c};border-right:1px solid ${c}"></span>`;
+}
+
+function renderMirror(r){
+  const breakdown = r.breakdown.length ? `<div style="margin-top:22px;border-top:1px solid var(--ec-line2);padding-top:16px">
+    <div style="${mono(10,'letter-spacing:0.12em;text-transform:uppercase')}color:var(--ec-ink4);margin-bottom:13px">FIG.02 · 相似度拆维 · 各维度有多像</div>
+    ${r.breakdown.map(d=>`<div style="margin-bottom:11px"><div style="display:flex;align-items:center;gap:12px"><span style="flex:0 0 84px;${serif()};font-size:13px;color:var(--ec-ink2)">${esc(d.dim)}</span><div style="flex:1;height:7px;background:var(--ec-line);border-radius:2px;overflow:hidden"><div style="height:100%;width:${d.score}%;background:linear-gradient(90deg,#d9a441,${RED});transform-origin:left;animation:ec-grow 0.8s cubic-bezier(.2,.8,.3,1) 0.3s both"></div></div><span style="flex:0 0 36px;text-align:right;${mono(12)}color:var(--ec-ink3)">${d.score}%</span></div>${d.note?`<div style="margin-left:96px;font-size:11.5px;color:var(--ec-ink4);line-height:1.45;margin-top:4px">${esc(d.note)}</div>`:''}</div>`).join('')}
+  </div>` : '';
+  const th = `${mono(10,'font-weight:600;letter-spacing:0.04em;text-transform:uppercase')}color:var(--ec-ink4);padding:5px 8px;border-bottom:1px solid var(--ec-line);text-align:left`;
+  const td = `padding:8px;border-bottom:1px solid var(--ec-line2);vertical-align:top`;
+  const mapping = r.mapping.length ? `<div style="margin-top:18px;border-top:1px solid var(--ec-line2);padding-top:16px">
+    <div style="${mono(10,'letter-spacing:0.12em;text-transform:uppercase')}color:var(--ec-ink4);margin-bottom:11px">FIG.03 · 结构对照 · 哪里像</div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:560px"><thead><tr><th style="${th}">结构要素</th><th style="${th}">那时</th><th style="width:22px;border-bottom:1px solid var(--ec-line)"></th><th style="${th}">现在</th><th style="${th}">依据</th></tr></thead><tbody>
+    ${r.mapping.map(m=>`<tr><td style="${td};${serif()};font-weight:700;color:var(--ec-ink);white-space:nowrap">${esc(m.element)}</td><td style="${td};color:var(--ec-ink2)">${esc(m.then)}</td><td style="${td};text-align:center;color:var(--ec-ink4)">→</td><td style="${td};color:var(--ec-ink2)">${esc(m.now)}${m.note?`<div style="font-size:11px;color:var(--ec-ink4);margin-top:2px">${esc(m.note)}</div>`:''}</td><td style="${td}"><span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;border:1px solid ${m.ev.fg};color:${m.ev.fg};background:${m.ev.bg};border-radius:2px;padding:1px 6px;white-space:nowrap">${m.ev.iconEl}${esc(m.ev.label)}</span></td></tr>`).join('')}
+    </tbody></table></div></div>` : '';
+  const other = r.otherEchoes.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:15px;align-items:center"><span style="${mono(10,'letter-spacing:0.1em')}color:var(--ec-ink4)">其它回响</span>${r.otherEchoes.map(o=>`<span style="background:var(--ec-line2);border:1px solid var(--ec-line);border-radius:20px;padding:3px 11px;font-size:12px;color:var(--ec-ink3)">${esc(o.label)} · ${esc(o.sim)}%</span>`).join('')}</div>` : '';
+  return `<div style="position:relative;overflow:hidden;background:var(--ec-surface);border:1px solid var(--ec-line);border-radius:3px;padding:28px 26px 22px;margin-bottom:18px;animation:ec-rise 0.55s ease both">
+    ${r.year?`<div aria-hidden="true" style="position:absolute;top:-18px;right:14px;${serif()};font-weight:900;font-size:140px;line-height:1;color:var(--ec-ink);opacity:0.05;pointer-events:none;user-select:none">${esc(r.year)}</div>`:''}
+    ${corner('var(--ec-ink3)')}
+    <div style="display:flex;flex-wrap:wrap;gap:22px;align-items:center;justify-content:center;position:relative">
+      <div style="flex:1 1 240px;min-width:200px"><div style="${mono(11,'letter-spacing:0.16em;text-transform:uppercase')}color:var(--ec-ink4);margin-bottom:10px">现在${state.latin?' · NOW':''}</div><div style="${serif()};font-weight:700;font-size:clamp(21px,2.7vw,27px);line-height:1.3;color:var(--ec-ink)">${esc(r.presentLabel)}</div></div>
+      <div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:9px">
+        <div style="position:relative;width:118px;height:118px;display:flex;align-items:center;justify-content:center">
+          <div style="position:absolute;inset:0;border-radius:50%;border:1px solid ${RED}"></div>
+          <div style="position:absolute;inset:9px;border-radius:50%;border:1px solid var(--ec-line)"></div>
+          <div style="position:absolute;left:50%;top:-7px;bottom:-7px;width:1px;background:var(--ec-ink4);transform:translateX(-0.5px)"></div>
+          <div style="position:absolute;top:50%;left:-7px;right:-7px;height:1px;background:var(--ec-ink4);transform:translateY(-0.5px)"></div>
+          <div style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--ec-surface);width:64px;height:64px;border-radius:50%;color:${RED}"><span style="${mono(8,'letter-spacing:0.06em')}">结构相似</span><span style="${serif()};font-weight:900;font-size:27px;line-height:1">${r.similarity}<span style="font-size:13px">%</span></span></div>
+        </div>
+        <span style="${mono(9.5)}color:var(--ec-ink4);text-align:center;max-width:124px;line-height:1.35">定性估计 · 非统计指标</span>
+      </div>
+      <div style="flex:1 1 240px;min-width:200px;text-align:right"><div style="${mono(11,'letter-spacing:0.16em;text-transform:uppercase')}color:var(--ec-ink4);margin-bottom:10px">那时${state.latin?' · THEN':''} ${esc(r.year)}</div><div style="${serif()};font-weight:700;font-size:clamp(21px,2.7vw,27px);line-height:1.3;color:${RED}">${esc(r.historicalLabel)}</div></div>
+    </div>
+    ${breakdown}
+    ${mapping}
+    <div style="border-top:1px solid var(--ec-line2);margin-top:18px;padding-top:15px;font-size:13.5px;line-height:1.7;color:var(--ec-ink2)"><span style="font-weight:700;color:var(--ec-ink)">为什么这样类比 · </span>${r.whyStructuralHTML}${r.whyNot?`<div style="color:var(--ec-ink4);margin-top:9px;font-size:12.5px;line-height:1.6">▸ 为什么不是更顺嘴的对比：${esc(r.whyNot)}</div>`:''}</div>
+    ${other}
+  </div>`;
+}
+
+function renderCard(card){
+  const expanded = state.expanded===card.key && !card.degraded;
+  const head = `<div class="ec-cardhead" data-action="${card.degraded?'noop':'toggle-card'}" data-key="${esc(card.key)}" ${card.degraded?'':'role="button" tabindex="0" aria-expanded="'+expanded+'"'} style="cursor:${card.degraded?'default':'pointer'};padding:16px 20px">
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;margin-bottom:9px">
+      <span style="display:flex;align-items:center;line-height:1">${card.iconEl}</span>
+      <span style="${mono(11)}color:var(--ec-ink4)">维度 ${card.no}/06</span>
+      <span style="${serif()};font-weight:700;font-size:16px;color:var(--ec-ink)">${esc(card.title)}</span>
+      ${card.degraded
+        ? `<span style="margin-left:auto;${mono(10,'letter-spacing:0.08em')}color:${RED}">未生成</span>`
+        : `<span style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;border:1px solid ${card.ev.fg};color:${card.ev.fg};background:${card.ev.bg};border-radius:2px;padding:2px 7px">${card.ev.iconEl}${esc(card.ev.label)}</span>
+           <span style="margin-left:auto;display:inline-flex;align-items:center;gap:7px;${mono(11)}color:var(--ec-ink4)">信度 ${card.confPct}%<span style="transform:rotate(${expanded?'180deg':'0deg'});display:inline-block;color:var(--ec-ink3)">▾</span></span>`}
+    </div>
+    ${card.tldr?`<div style="font-size:13px;color:var(--ec-ink2);line-height:1.55;background:var(--ec-line2);border-radius:2px;padding:8px 12px;margin-bottom:10px">${esc(card.tldr)}</div>`:''}
+    <div style="${serif()};font-weight:600;font-size:16.5px;color:${card.degraded?'var(--ec-ink4)':'var(--ec-ink)'};line-height:1.4">${esc(card.headline)}</div>
+    ${card.degraded
+      ? `<div style="${mono(11.5)}color:var(--ec-ink4);margin-top:10px;line-height:1.55">${esc(card.failNote)}</div>`
+      : `<div style="display:flex;align-items:center;gap:12px;margin-top:13px"><span style="${mono(10.5)}color:var(--ec-ink4);white-space:nowrap">${esc(card.horizon)}</span><div style="flex:1;height:5px;background:var(--ec-line);border-radius:2px;overflow:hidden"><div style="height:100%;width:${card.confPct}%;background:linear-gradient(90deg,#b9ad90,var(--ec-ink));transform-origin:left;animation:ec-grow 0.7s cubic-bezier(.2,.8,.3,1) 0.15s both"></div></div><span style="${mono(11)}color:var(--ec-ink3)">${card.confPct}%</span></div>${card.confNote?`<div style="font-size:11px;color:var(--ec-ink4);margin-top:6px;line-height:1.45">${esc(card.confNote)}</div>`:''}`}
+  </div>`;
+
+  let body='';
+  if(expanded){
+    const chain = card.chain.length ? `<div style="margin-top:16px"><div style="${mono(10,'letter-spacing:0.1em;text-transform:uppercase')}color:var(--ec-ink4);margin-bottom:9px">因果链 · 一步步传到你</div>${card.chain.map(s=>`<div style="display:flex;gap:11px;margin-bottom:11px"><span style="flex:0 0 22px;height:22px;border-radius:50%;background:${RED};color:#fff;${mono(11)}display:flex;align-items:center;justify-content:center;margin-top:1px">${esc(s.num)}</span><div style="flex:1"><div style="${serif()};font-size:14px;line-height:1.45;color:var(--ec-ink)">${esc(s.cause)} <span style="color:var(--ec-ink4)">→</span> ${esc(s.effect)}</div>${s.mech?`<div style="font-size:12px;color:var(--ec-ink3);margin-top:3px;line-height:1.5">${esc(s.mech)}</div>`:''}${s.ground?`<div style="${mono(10.5)}color:var(--ec-ink4);margin-top:3px;line-height:1.45">▸ ${esc(s.ground)}</div>`:''}</div></div>`).join('')}</div>` : '';
+    const byc = card.byCountry.length ? `<div style="margin-top:16px"><div style="${mono(10,'letter-spacing:0.1em;text-transform:uppercase')}color:var(--ec-ink4);margin-bottom:7px">分国别影响</div>${card.byCountry.map(bc=>`<div style="font-size:13px;color:var(--ec-ink2);line-height:1.55;margin-bottom:4px"><span style="display:inline-block;${serif()};font-weight:700;color:var(--ec-ink);min-width:42px;margin-right:8px">${esc(bc.country)}</span>${esc(bc.impact)}</div>`).join('')}</div>` : '';
+    const then = card.then ? `<div style="margin-top:16px"><div style="${mono(10,'letter-spacing:0.1em;text-transform:uppercase')}color:var(--ec-ink4);margin-bottom:5px">上一次结构类似时 · 宏观</div><div style="font-size:13px;line-height:1.65;color:var(--ec-ink2)">${esc(card.then)}</div></div>` : '';
+    const anchors = card.anchors.length ? `<div style="margin-top:16px"><div style="${mono(10,'letter-spacing:0.1em;text-transform:uppercase')}color:var(--ec-ink4);margin-bottom:7px">数据锚</div><div style="display:flex;flex-wrap:wrap;gap:8px">${card.anchors.map(a=>`<span style="background:var(--ec-line2);border:1px solid var(--ec-line);border-radius:2px;padding:3px 9px;font-size:11.5px;color:var(--ec-ink2);${mono(11.5)}">${esc(a)}</span>`).join('')}</div></div>` : '';
+    body = `<div style="padding:2px 20px 18px;border-top:1px dotted var(--ec-line);animation:ec-rise 0.4s ease both">${card.hasWhy?`<div style="margin-top:14px"><div style="${mono(10,'letter-spacing:0.1em;text-transform:uppercase')}color:var(--ec-ink4);margin-bottom:5px">为什么 · 因果机制</div><div style="font-size:13.5px;line-height:1.7;color:var(--ec-ink2)">${card.whyHTML}</div></div>`:''}${chain}${byc}${then}${anchors}</div>`;
+  }
+  return `<div style="background:var(--ec-surface);border:1px solid var(--ec-line);border-left:4px solid ${card.dimColor};border-radius:2px;margin-bottom:12px;overflow:hidden;animation:ec-rise 0.5s ease both">${head}${body}</div>`;
+}
+
+function renderDebate(){
+  const d = vmDebate(); if(!d) return '';
+  const head = `<div style="border-bottom:3px double var(--ec-ink);padding-bottom:16px;margin-bottom:9px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap"><div style="${mono(10.5,'letter-spacing:0.16em')}color:var(--ec-ink4)">FIG.04 · 学派对撞</div><div style="${mono(10.5)}color:var(--ec-ink4)">${d.voiceCount?`${d.voiceCount} 个学派 · 同一事件 · 不同切片`:`<span style="color:${RED}">证词未生成 · 仅综合可用</span>`}</div></div>
+    <h2 style="margin:7px 0 6px;${serif()};font-weight:900;font-size:clamp(25px,3.6vw,32px);letter-spacing:0.02em;color:var(--ec-ink)">学派吵架</h2>
+    <p style="margin:0;${serif()};font-size:15px;color:var(--ec-ink3);line-height:1.6">${esc(d.question)}</p></div>`;
+
+  let body;
+  if(d.voiceCount){
+    body = `<div style="${mono(10,'letter-spacing:0.14em')}color:var(--ec-ink4);margin-bottom:6px">CONTENTION DIAGRAM — 沿中轴左右对读，菱点为各派落点</div>
+    <div style="position:relative;margin:18px 0 10px">
+      <div aria-hidden="true" style="position:absolute;left:50%;top:0;bottom:0;width:0;border-left:1px dashed var(--ec-ink4);transform:translateX(-0.5px);transform-origin:top;animation:ec-drop 0.6s ease both"></div>
+      ${d.voices.map(v=>`<div style="display:flex;justify-content:${v.L?'flex-start':'flex-end'};position:relative;z-index:1;margin-bottom:16px;animation:${v.enter}">
+        <div style="position:relative;overflow:hidden;width:84%;background:var(--ec-surface);border:1px solid var(--ec-line);border-${v.L?'right':'left'}:5px solid ${v.color};border-radius:2px;padding:15px 18px">
+          <span aria-hidden="true" style="position:absolute;top:4px;${v.L?'right:14px':'left:14px'};${serif()};font-weight:900;font-size:56px;line-height:1;color:${v.color};opacity:0.13;pointer-events:none;user-select:none">${v.no}</span>
+          <span aria-hidden="true" style="position:absolute;top:50%;${v.L?'right:-7px':'left:-7px'};width:9px;height:9px;margin-top:-4.5px;background:${v.color};transform:rotate(45deg)"></span>
+          <div style="${mono(11,'letter-spacing:0.04em')}font-weight:700;color:${v.color};margin-bottom:8px;display:flex;align-items:center;gap:8px;position:relative"><span style="font-size:9.5px;letter-spacing:0.08em;color:var(--ec-ink4);font-weight:600">证词 ${v.no}</span>${esc(v.label)}</div>
+          <div style="${serif()};font-size:16.5px;line-height:1.55;color:var(--ec-ink);position:relative">${v.stanceHTML}</div>
+          ${v.anchor?`<div style="${mono(11)}color:var(--ec-ink3);margin-top:9px;position:relative;display:flex;align-items:center;gap:6px">${evIcon('data','#65707a',12)}${esc(v.anchor)}</div>`:''}
+        </div></div>`).join('')}
+    </div>`;
+  } else {
+    body = `<div style="position:relative;background:var(--ec-surface);border:1px solid ${RED};border-radius:3px;padding:18px 20px;margin:18px 0 22px;animation:ec-rise 0.5s ease both"><div style="display:flex;align-items:center;gap:9px;margin-bottom:8px"><span style="width:8px;height:8px;background:${RED};transform:rotate(45deg);display:inline-block;flex:0 0 auto"></span><span style="${mono(10.5,'letter-spacing:0.14em;text-transform:uppercase')}color:${RED};font-weight:700">证词未生成 · NO TESTIMONY</span></div><div style="font-size:13px;line-height:1.65;color:var(--ec-ink2);max-width:60ch">各学派证词本次未能生成（会诊未完成）。如下方「中枢大脑·综合」已产出，仍可作为整体判断参考。</div></div>`;
+  }
+  const crux = d.crux ? `<div style="position:relative;max-width:640px;margin:8px auto 26px;background:var(--ec-surface2);border:1px solid ${RED};border-radius:3px;padding:22px 24px;text-align:center;animation:ec-pop 0.5s cubic-bezier(.2,.8,.3,1.2) 0.2s both">${corner(RED)}<div style="${mono(10,'letter-spacing:0.14em;text-transform:uppercase')}color:${RED};font-weight:700;margin-bottom:10px">⊗ 争议核心 · THE CRUX</div><p style="margin:0 auto;max-width:54ch;${serif()};font-size:15.5px;line-height:1.7;color:var(--ec-ink2)">${esc(d.crux)}</p></div>` : '';
+  const synth = d.synthesisHTML ? `<div style="position:relative;overflow:hidden;background:var(--ec-ink);border-radius:3px;padding:24px 24px 22px;margin-bottom:18px;animation:ec-rise 0.55s ease 0.15s both"><span aria-hidden="true" style="position:absolute;top:9px;left:9px;width:13px;height:13px;border-top:1px solid rgba(255,255,255,0.35);border-left:1px solid rgba(255,255,255,0.35)"></span><span aria-hidden="true" style="position:absolute;bottom:9px;right:9px;width:13px;height:13px;border-bottom:1px solid rgba(255,255,255,0.35);border-right:1px solid rgba(255,255,255,0.35)"></span><div style="display:flex;align-items:center;gap:8px;margin-bottom:11px"><span style="width:8px;height:8px;background:${RED};transform:rotate(45deg);display:inline-block"></span><span style="${mono(10,'letter-spacing:0.14em;text-transform:uppercase')}color:#aeb9c1;font-weight:700">中枢大脑 · 综合 / SYNTHESIS</span></div><p style="margin:0;${serif()};font-size:15.5px;line-height:1.8;color:#e3e8eb">${d.synthesisHTML}</p></div>` : '';
+  return `<div style="max-width:880px;margin:0 auto;padding:28px 24px 64px">${head}${body}${crux}${synth}<div style="font-size:12px;color:var(--ec-ink4);line-height:1.6;border-top:1px solid var(--ec-line);padding-top:14px">${d.disclaimer?`<div style="margin-bottom:5px">${esc(d.disclaimer)}</div>`:''}<div>${esc(d.uncertainty)}</div></div></div>`;
+}
+
+function renderLoading(){
+  if(!state.loading) return '';
+  const pct = Math.round((state.buildStep+1)/BUILD_STEPS.length*100);
+  return `<div role="status" aria-live="polite" style="position:fixed;inset:0;z-index:200;background:linear-gradient(0deg, rgba(27,38,46,0.05) 1px, transparent 1px) 0 0 / 100% 27px, linear-gradient(90deg, rgba(27,38,46,0.05) 1px, transparent 1px) 0 0 / 27px 100%, rgba(216,221,225,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px">
+    <div style="position:relative;width:320px;max-width:84vw">${buildScene()}</div>
+    <div style="text-align:center;max-width:380px">
+      <div style="${serif()};font-weight:700;font-size:17px;color:var(--ec-ink);margin-bottom:11px">正在为这件事搭建结构模型</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:9px"><span style="width:6px;height:6px;background:${RED};transform:rotate(45deg);display:inline-block;flex:0 0 auto"></span><span style="${mono(12,'letter-spacing:0.04em')}color:var(--ec-ink3)">${esc(BUILD_STEPS[Math.min(state.buildStep,BUILD_STEPS.length-1)])}</span></div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:11px"><span style="width:200px;max-width:64vw;height:3px;background:var(--ec-line);border-radius:2px;overflow:hidden;display:inline-block"><span style="display:block;height:100%;width:${pct}%;background:var(--ec-ink3);transition:width 0.5s cubic-bezier(.3,.8,.3,1)"></span></span><span style="${mono(10)}color:var(--ec-ink4);min-width:30px;text-align:left">${pct}%</span></div>
+      <div style="${mono(11)}color:var(--ec-ink4);line-height:1.5">${esc(state.loadingLabel)}</div>
+      <div style="${mono(10)}color:var(--ec-ink4);margin-top:8px;line-height:1.5">实时调用 5 学派会诊 · 约 1 分钟</div>
+    </div>
+  </div>`;
+}
+
+function renderError(){
+  if(!state.error) return '';
+  return `<div role="alert" style="position:fixed;inset:0;z-index:200;background:rgba(216,221,225,0.96);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px">
+    <div style="position:relative;max-width:420px;background:var(--ec-surface);border:1px solid ${RED};border-radius:3px;padding:24px 26px;text-align:center">${corner(RED)}
+      <div style="${mono(10.5,'letter-spacing:0.14em;text-transform:uppercase')}color:${RED};font-weight:700;margin-bottom:10px">会诊中断 · REQUEST FAILED</div>
+      <div style="${serif()};font-weight:700;font-size:18px;color:var(--ec-ink);margin-bottom:8px">分析没能完成</div>
+      <div style="font-size:13px;color:var(--ec-ink2);line-height:1.6;margin-bottom:18px">${esc(state.error)}<br>会诊需实时调用多个学派，偶有超时。可重试，或返回看板。</div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button class="ec-btn-red" data-action="retry" style="background:${RED};color:#fff;border:none;border-radius:2px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;${serif()}">重试</button>
+        <button class="ec-backbtn" data-action="home" style="cursor:pointer;background:none;border:1px solid var(--ec-line);border-radius:2px;padding:9px 16px;font-size:13px;color:var(--ec-ink2)">返回看板</button>
+      </div>
+    </div></div>`;
+}
+
+function renderGlossPop(){
+  const pop = document.getElementById('gloss-pop');
+  const g = state.gloss;
+  if(!g){ pop.style.display='none'; pop.setAttribute('aria-hidden','true'); return; }
+  pop.innerHTML = `<div style="${serif()};font-weight:700;font-size:15px;margin-bottom:5px">${esc(g.std)}</div><div style="font-size:13px;line-height:1.55;color:#e5ddca;margin-bottom:8px">${esc(g.def)}</div><div style="font-size:12.5px;line-height:1.55;color:#d9a441">✦ 就像：${esc(g.analogy)}</div>`;
+  pop.setAttribute('style', `display:block;position:fixed;z-index:300;left:${g.x}px;top:${g.y}px;max-width:300px;max-height:46vh;overflow-y:auto;overscroll-behavior:contain;background:#211c15;color:#f3ecdb;border-radius:4px;padding:13px 16px;box-shadow:0 10px 34px rgba(33,28,21,0.34);animation:ec-fade 0.16s ease`);
+  pop.setAttribute('aria-hidden','false');
+}
+
+// ── 主渲染 ────────────────────────────────────────────────────
+function render(){
+  const tone = TONES[state.tone] || TONES['冷灰'];
+  const app = document.getElementById('app');
+  const vars = `--ec-bg:${tone.bg};--ec-surface:${tone.surface};--ec-surface2:${tone.surface2};--ec-ink:${tone.ink};--ec-ink2:${tone.ink2};--ec-ink3:${tone.ink3};--ec-ink4:${tone.ink4};--ec-line:${tone.line};--ec-line2:${tone.line2}`;
+  const bg = `linear-gradient(0deg, rgba(27,38,46,0.05) 1px, transparent 1px) 0 -1px / 100% 27px, linear-gradient(90deg, rgba(27,38,46,0.05) 1px, transparent 1px) -1px 0 / 27px 100%, ${tone.bg}`;
+  let screen='';
+  if(state.screen==='feed') screen=renderFeed();
+  else if(state.screen==='report') screen=renderReport();
+  else if(state.screen==='debate') screen=renderDebate();
+  app.setAttribute('style', `${vars};background:${bg};color:${tone.ink};min-height:100vh;font-family:'Noto Sans SC',-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif`);
+  app.innerHTML = renderTopbar() + screen + renderLoading() + renderError();
+  renderGlossPop();
+}
+
+// ── 动作路由 ──────────────────────────────────────────────────
+function eventByIdx(i){ return state.events[i]; }
+
+document.getElementById('app').addEventListener('click', (e)=>{
+  const el = e.target.closest && e.target.closest('[data-action]');
+  if(!el) return;
+  const a = el.getAttribute('data-action');
+  if(a==='home'){ go('feed'); }
+  else if(a==='back'){ back(); }
+  else if(a==='tone'){ cycleTone(); }
+  else if(a==='analyze'){ const ev=eventByIdx(+el.getAttribute('data-idx')); if(ev) analyze(ev); }
+  else if(a==='custom-submit'){ customSubmit(); }
+  else if(a==='heat'){ e.stopPropagation(); toggleHeat(+el.getAttribute('data-idx')); }
+  else if(a==='toggle-card'){ toggleCard(el.getAttribute('data-key')); }
+  else if(a==='show-debate'){ go('debate'); }
+  else if(a==='term'){ e.stopPropagation(); openGloss(el.getAttribute('data-std'), el); }
+  else if(a==='retry'){ if(state.lastEvent){ state.error=null; analyze(state.lastEvent); } }
+});
+// 键盘可达：Enter/Space 触发卡片/事件/term
+document.getElementById('app').addEventListener('keydown', (e)=>{
+  if(e.key!=='Enter' && e.key!==' ') return;
+  const el = e.target.closest && e.target.closest('[data-action]');
+  if(!el) return;
+  const a = el.getAttribute('data-action');
+  if(['analyze','toggle-card','term','show-debate','custom-submit','retry','tone'].includes(a)){ e.preventDefault(); el.click(); }
+});
+// 输入框（每次 render 重建，用 input 事件同步 + Enter 提交）
+document.getElementById('app').addEventListener('input', (e)=>{ if(e.target.id==='ec-custom') state.customText = e.target.value; });
+document.getElementById('app').addEventListener('keydown', (e)=>{ if(e.target.id==='ec-custom' && e.key==='Enter') customSubmit(); });
+// 点击空白关释义
+document.addEventListener('click', (e)=>{
+  if(!state.gloss) return;
+  const t=e.target;
+  if(t.closest && (t.closest('[data-action="term"]') || t.closest('#gloss-pop'))) return;
+  state.gloss=null; renderGlossPop();
+}, true);
+
+// ── 行为 ──────────────────────────────────────────────────────
+function go(screen){ state.screen=screen; state.gloss=null; render(); window.scrollTo(0,0); }
+function back(){ go(state.screen==='debate' ? 'report' : 'feed'); }
+function cycleTone(){ const i=TONE_NAMES.indexOf(state.tone); state.tone=TONE_NAMES[(i+1)%TONE_NAMES.length]; try{ localStorage.setItem('ec-tone', state.tone); }catch(e){} render(); }
+function toggleCard(key){ state.expanded = state.expanded===key ? null : key; render(); }
+function customSubmit(){ const t=(state.customText||'').trim(); if(!t) return; analyze({ title:t, text:t }); }
+
+function openGloss(std, el){
+  const entry = (GLOSSARY && GLOSSARY.terms || {})[std]; if(!entry) return;
+  const r = el.getBoundingClientRect(); const pw=300, ph=150;
+  let x=r.left, y=r.bottom+8;
+  if(x+pw>window.innerWidth-12) x=window.innerWidth-pw-12;
+  if(x<12) x=12;
+  if(y+ph>window.innerHeight-12) y=r.top-ph-8;
+  state.gloss = { std, def:entry.def, analogy:entry.analogy, x:Math.round(x), y:Math.round(y) };
+  renderGlossPop();
+}
+
+function startStepTimer(){
+  stopStepTimer();
+  // 真后端约 60–90s；6 步 → 每 ~11s 进一步，封顶停最后一步
+  _stepTimer = setInterval(()=>{ if(state.buildStep < BUILD_STEPS.length-1){ state.buildStep++; render(); } }, 11000);
+}
+function stopStepTimer(){ if(_stepTimer){ clearInterval(_stepTimer); _stepTimer=null; } }
+
+async function analyze(ev){
+  const label = (ev.text || ev.title || ev.blurb || '').slice(0,80);
+  state.loading=true; state.error=null; state.lastEvent=ev; state.loadingLabel=label; state.buildStep=0; state.gloss=null;
+  render(); startStepTimer();
+  try {
+    const report = await fetchJSON(API_BASE+'/api/life-report', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ text: ev.text||ev.title||'', as_of: ev.as_of||todayISO(), mode:'current' }),
+    }, 150000);
+    stopStepTimer();
+    state.report=report; state.screen='report'; state.loading=false; state.expanded=null;
+    render(); window.scrollTo(0,0);
+  } catch(err){
+    stopStepTimer();
+    state.loading=false;
+    state.error = (err && err.name==='AbortError') ? '请求超时（超过 150 秒）。' : ('网络/服务异常：'+esc(err && err.message || String(err)));
+    render();
+  }
+}
+
+function toggleHeat(idx){
+  const cur = state.heat[idx];
+  if(cur && cur.open){ state.heat[idx]={...cur, open:false}; render(); return; }
+  if(cur && cur.pts){ state.heat[idx]={...cur, open:true}; render(); return; }
+  state.heat[idx]={ open:true, loading:true }; render();
+  // 串行排队（GDELT 限流 1req/5s 友好）
+  _heatSeq = _heatSeq.then(async ()=>{
+    const ev = state.events[idx]; const q = ev ? (ev.title||ev.blurb||'') : '';
+    try {
+      const data = await fetchJSON(API_BASE+'/api/heat?q='+encodeURIComponent(q), null, 30000);
+      state.heat[idx]={ open:true, loading:false, pts:data.points||[] };
+    } catch(e){ state.heat[idx]={ open:true, loading:false, pts:[] }; }
+    render();
+  });
+}
+
+// ── 初始化 ────────────────────────────────────────────────────
+async function init(){
+  render();
+  try {
+    const [tr, gl] = await Promise.all([
+      fetchJSON(API_BASE+'/api/trending', null, 30000).catch(()=>({events:[],live:false})),
+      fetchJSON(API_BASE+'/api/glossary', null, 15000).catch(()=>null),
+    ]);
+    if(gl){
+      GLOSSARY = gl;
+      const all = Object.keys(gl.terms||{}).map(k=>({match:k,std:k}))
+        .concat(Object.keys(gl.aliases||{}).map(a=>({match:a,std:gl.aliases[a]})));
+      all.sort((a,b)=>b.match.length-a.match.length);
+      MATCHER = all;
+    }
+    state.events = tr.events||[]; state.live = !!tr.live; state.eventsLoaded=true;
+  } catch(e){ state.eventsLoaded=true; }
+  render();
+}
+init();
+</script>
+</body>
+</html>

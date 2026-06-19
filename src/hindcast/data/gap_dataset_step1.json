@@ -1,0 +1,119 @@
+{
+ "us_core_cpi_yoy": {
+  "unit": "yoy个pp",
+  "first_vintage": "1996-12-12",
+  "n": 12,
+  "miss": 0,
+  "mean_abs_gap": 0.1587,
+  "max_abs_gap": 0.4507,
+  "note": "早于 1996-12-12 = 无 vintage（规矩A 留白不顶替）；gap 单位=yoy个pp，换基不变可信"
+ },
+ "us_gdp_yoy": {
+  "unit": "yoy个pp",
+  "first_vintage": "1991-12-04",
+  "n": 12,
+  "miss": 0,
+  "mean_abs_gap": 0.7419,
+  "max_abs_gap": 2.0291,
+  "note": "早于 1991-12-04 = 无 vintage（规矩A 留白不顶替）；gap 单位=yoy个pp，换基不变可信"
+ },
+ "us_m2_yoy": {
+  "unit": "yoy个pp",
+  "first_vintage": "1980-02-08",
+  "n": 12,
+  "miss": 0,
+  "mean_abs_gap": 0.3368,
+  "max_abs_gap": 0.8147,
+  "note": "早于 1980-02-08 = 无 vintage（规矩A 留白不顶替）；gap 单位=yoy个pp，换基不变可信"
+ },
+ "us_unemployment": {
+  "unit": "level(%)",
+  "first_vintage": "1960-03-15",
+  "n": 12,
+  "miss": 0,
+  "mean_abs_gap": 0.1417,
+  "max_abs_gap": 0.6,
+  "note": "早于 1960-03-15 = 无 vintage（规矩A 留白不顶替）；gap 单位=level(%)，原单位,不可跨序列裸比"
+ },
+ "us_labor_participation": {
+  "unit": "level(%)",
+  "first_vintage": "1997-02-07",
+  "n": 12,
+  "miss": 0,
+  "mean_abs_gap": 0.175,
+  "max_abs_gap": 0.3,
+  "note": "早于 1997-02-07 = 无 vintage（规矩A 留白不顶替）；gap 单位=level(%)，原单位,不可跨序列裸比"
+ },
+ "us_nfci": {
+  "unit": "level(指数)",
+  "first_vintage": "2011-05-25",
+  "n": 12,
+  "miss": 0,
+  "mean_abs_gap": 0.1429,
+  "max_abs_gap": 0.284,
+  "note": "早于 2011-05-25 = 无 vintage（规矩A 留白不顶替）；gap 单位=level(指数)，原单位,不可跨序列裸比"
+ },
+ "us_potential_gdp": {
+  "unit": "level($bn)",
+  "first_vintage": "1991-01-30",
+  "n": 12,
+  "miss": 0,
+  "mean_abs_gap": 3697.6883,
+  "max_abs_gap": 5905.4772,
+  "note": "早于 1991-01-30 = 无 vintage（规矩A 留白不顶替）；gap 单位=level($bn)，原单位,不可跨序列裸比"
+ },
+ "us_nairu": {
+  "unit": "level(%)",
+  "first_vintage": "2011-02-02",
+  "n": 12,
+  "miss": 0,
+  "mean_abs_gap": 0.2201,
+  "max_abs_gap": 0.6515,
+  "note": "早于 2011-02-02 = 无 vintage（规矩A 留白不顶替）；gap 单位=level(%)，原单位,不可跨序列裸比"
+ },
+ "us_private_credit_to_gdp": {
+  "unit": "level(%GDP)",
+  "first_vintage": "2016-06-06",
+  "n": 12,
+  "miss": 0,
+  "mean_abs_gap": 3.2583,
+  "max_abs_gap": 10.6,
+  "note": "早于 2016-06-06 = 无 vintage（规矩A 留白不顶替）；gap 单位=level(%GDP)，原单位,不可跨序列裸比"
+ },
+ "us_public_debt_pct_gdp": {
+  "unit": "level(%GDP)",
+  "first_vintage": "2012-10-26",
+  "n": 12,
+  "miss": 0,
+  "mean_abs_gap": 1.9874,
+  "max_abs_gap": 5.1885,
+  "note": "早于 2012-10-26 = 无 vintage（规矩A 留白不顶替）；gap 单位=level(%GDP)，原单位,不可跨序列裸比"
+ },
+ "us_private_investment_pct_gdp": {
+  "unit": "level(%GDP)",
+  "first_vintage": "2013-02-28",
+  "n": 12,
+  "miss": 0,
+  "mean_abs_gap": 0.7417,
+  "max_abs_gap": 2.7,
+  "note": "早于 2013-02-28 = 无 vintage（规矩A 留白不顶替）；gap 单位=level(%GDP)，原单位,不可跨序列裸比"
+ },
+ "us_fiscal_deficit_pct_gdp": {
+  "unit": "level(%GDP)",
+  "first_vintage": "2012-10-26",
+  "n": 12,
+  "miss": 0,
+  "mean_abs_gap": 1.6324,
+  "max_abs_gap": 6.7946,
+  "note": "早于 2012-10-26 = 无 vintage（规矩A 留白不顶替）；gap 单位=level(%GDP)，原单位,不可跨序列裸比"
+ },
+ "us_tfp": {
+  "unit": "level(指数)",
+  "first_vintage": "2013-07-03",
+  "n": 2,
+  "miss": 10,
+  "mean_abs_gap": 0.0477,
+  "max_abs_gap": 0.0785,
+  "note": "早于 2013-07-03 = 无 vintage（规矩A 留白不顶替）；gap 单位=level(指数)，原单位,不可跨序列裸比"
+ }
+}

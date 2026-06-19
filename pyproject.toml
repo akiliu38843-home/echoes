@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hindcast"
+version = "0.5.0"
+description = "Multi-school macro forecaster: 4 economic schools vote on gold/USD path based on structural state of the USD hegemony era (1944-now)"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "openai>=2.0.0",
+    "pydantic>=2.0.0",
+    "mcp>=1.0.0",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.27.0",
+    "requests>=2.28.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "pytest-asyncio"]
+
+[project.scripts]
+hindcast = "hindcast.cli:main"
+hindcast-mcp = "hindcast.mcp_server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hindcast"]

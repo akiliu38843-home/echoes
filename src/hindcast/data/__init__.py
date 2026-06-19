@@ -1,0 +1,13 @@
+"""Historical snapshots + ground truth — MVP 内置 4 时点，W2 扩到 8。"""
+
+from hindcast.data.snapshots import ALL_SNAPSHOTS, SNAPSHOTS
+from hindcast.data.ground_truth import (
+    GROUND_TRUTH, POLICY_RATE_GROUND_TRUTH, YIELD_GROUND_TRUTH,
+    FX_GROUND_TRUTH, COMMODITY_GROUND_TRUTH, BRIDGE_GROUND_TRUTH,
+)
+
+__all__ = [
+    "ALL_SNAPSHOTS", "SNAPSHOTS",
+    "GROUND_TRUTH", "POLICY_RATE_GROUND_TRUTH", "YIELD_GROUND_TRUTH",
+    "FX_GROUND_TRUTH", "COMMODITY_GROUND_TRUTH", "BRIDGE_GROUND_TRUTH",
+]

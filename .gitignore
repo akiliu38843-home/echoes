@@ -1,0 +1,32 @@
+# ── 密钥 / 环境（绝不提交）──────────────────────────
+.env
+.env.*
+!.env.example
+*.key
+secrets.*
+
+# ── Python ──────────────────────────────────────────
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── Node / Vercel ───────────────────────────────────
+node_modules/
+.vercel/
+.next/
+dist/
+
+# ── 系统 / 编辑器 ───────────────────────────────────
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# ── 本地数据缓存 / 下载 ─────────────────────────────
+*.zip
+/tmp/
